@@ -2,7 +2,7 @@
 #SBATCH --job-name=multithread
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=3
 #SBATCH --time=0:10:00
 #SBATCH --out=python_job-%j.log
 #SBATCH --error=slurm-%j.err
