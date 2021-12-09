@@ -1,3 +1,10 @@
+import os
+os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4
+os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
+os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+
 from core.power_flow import Grid
 from time import perf_counter
 from tqdm import tqdm
@@ -26,7 +33,7 @@ def solve_case(case_dictionary, ieee_grid, n_scenarios, time_steps):
             voltage_magnitude = np.abs(voltage).astype(np.float32)
 
             voltage_solutions[(ii, jj)] = {"v": voltage.astype(np.csingle),
-                                           "v_mag": voltage_magnitude,
+                                           "v_mag": voltage_magnitude.astype(np.float32),
                                            "v_max": voltage_magnitude.max(),
                                            "v_min": voltage_magnitude.min()}
     end = perf_counter()
@@ -39,7 +46,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--case', required=False, type=int, default=10,
                         help="Case number to solve")
-    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=10,
+    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=500,
                         help='Number of scenarios to simulate.')
     args, unknown = parser.parse_known_args()
 
@@ -65,7 +72,7 @@ if __name__ == "__main__":
                                    time_steps=48)
 
     # Save solution dictionary in pickle file:
-    file_name_load_models = f"HPC/solutions/voltage_dict_case_{args.case}_scenarios_{args.n_scenarios}.pkl"
+    file_name_load_models = f"HPC/solutions/AWS/voltage_dict_case_{args.case}_scenarios_{args.n_scenarios}.pkl"
     with open(file_name_load_models, "wb") as pickle_file:
         pickle.dump(voltage_solutions, pickle_file)
     #
