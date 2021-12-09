@@ -1,0 +1,1 @@
+This folder contains the pickle files to all the copula and clustering models
