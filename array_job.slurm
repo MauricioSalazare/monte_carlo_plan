@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=multithread
-#SBATCH --nodes=1
+#SBATCH --nodes=1-10
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=0:10:00
@@ -10,7 +10,7 @@
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=e.m.salazar.duque@tue.nl
-#SBATCH --array=0-7500
+#SBATCH --array=1-501
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID"
 echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
