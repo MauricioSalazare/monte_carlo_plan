@@ -15,7 +15,7 @@ numbers = [int(case.split("_scenarios")[0]) for case in cases]
 
 desired = set(range(7502))
 missing = desired - set(numbers)
-
+print(f"Missing cases: {missing}")
 
 N_SCENARIOS = 500
 for ii, case in enumerate(sorted(missing)):
@@ -32,16 +32,16 @@ for ii, case in enumerate(sorted(missing)):
                   "# SBATCH --mail-type=end",
                   "# SBATCH --mail-user=e.m.salazar.duque@tue.nl",
                   "",
-                  """echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID""",
-                  """echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID""",
-                  """echo "My SLURM_CPUS_PER_TASK is $SLURM_CPUS_PER_TASK""",
+              #    """echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID" """,
+              #    """echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID" """,
+              #    """echo "My SLURM_CPUS_PER_TASK is $SLURM_CPUS_PER_TASK" """,
                   """echo "Executing on the machine:" $(hostname)""",
-                  "",
-                  "export OMP_NUM_THREADS =$SLURM_CPUS_PER_TASK",
-                  "export OPENBLAS_NUM_THREADS =$SLURM_CPUS_PER_TASK",
-                  "export MKL_NUM_THREADS =$SLURM_CPUS_PER_TASK",
-                  "export VECLIB_MAXIMUM_THREADS =$SLURM_CPUS_PER_TASK",
-                  "export NUMEXPR_NUM_THREADS =$SLURM_CPUS_PER_TASK",
+             #     "",
+             #     "export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK",
+             #     "export OPENBLAS_NUM_THREADS=$SLURM_CPUS_PER_TASK",
+             #     "export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK",
+             #     "export VECLIB_MAXIMUM_THREADS=$SLURM_CPUS_PER_TASK",
+             #     "export NUMEXPR_NUM_THREADS=$SLURM_CPUS_PER_TASK",
                   "",
                   "spack load miniconda3",
                   "source activate montecarlo",
