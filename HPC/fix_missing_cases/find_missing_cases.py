@@ -4,7 +4,8 @@ from pathlib import Path
 from glob import glob
 import os
 
-path_file_parent = Path(r"F:\monte_carlo_solutions")
+# path_file_parent = Path(r"F:\monte_carlo_solutions")
+path_file_parent = Path(r"..\solutions\AWS")
 
 assert path_file_parent.is_dir(), "Incorrect folder name"
 
@@ -12,7 +13,7 @@ files = os.listdir(path_file_parent)
 cases = [file.split("case_")[1] for file in files]
 numbers = [int(case.split("_scenarios")[0]) for case in cases]
 
-desired = set(range(756))
+desired = set(range(5))
 missing = desired - set(numbers)
 
 
