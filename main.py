@@ -46,11 +46,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--case', required=False, type=int, default=1,
                         help="Case number to solve")
-    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=500,
+    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=5,
                         help='Number of scenarios to simulate.')
     args, unknown = parser.parse_known_args()
 
-    process_case = int(1000 + args.case)
+    process_case = int(2000 + args.case)
     print(f"Processing case: {process_case}")
 
     file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                                    time_steps=48)
 
     # Save solution dictionary in pickle file:
-    file_name_load_models = f"HPC/solutions/AWS/voltage_dict_case_{args.case}_scenarios_{args.n_scenarios}.pkl"
+    file_name_load_models = f"HPC/solutions/AWS/voltage_dict_case_{process_case}_scenarios_{args.n_scenarios}.pkl"
     with open(file_name_load_models, "wb") as pickle_file:
         pickle.dump(voltage_solutions, pickle_file)
     #
