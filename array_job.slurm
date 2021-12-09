@@ -10,7 +10,7 @@
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=e.m.salazar.duque@tue.nl
-#SBATCH --array=0-5
+#SBATCH --array=0-7500
 
 echo "My SLURM_ARRAY_JOB_ID is $SLURM_ARRAY_JOB_ID"
 echo "My SLURM_ARRAY_TASK_ID is $SLURM_ARRAY_TASK_ID"
