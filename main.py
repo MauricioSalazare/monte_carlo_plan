@@ -1,9 +1,9 @@
-import os
-os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
-os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4
-os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
-os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+# import os
+# os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+# os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4
+# os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
+# os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
+# os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
 
 from core.power_flow import Grid
 from time import perf_counter
@@ -50,7 +50,9 @@ if __name__ == "__main__":
                         help='Number of scenarios to simulate.')
     args, unknown = parser.parse_known_args()
 
-    file_name_scenario_generator_model = "models/scenario_generator_model.pkl"
+    print(f"Processing case: {args.case}")
+
+    file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"
     node_file_path = r"data/processed_data/network_data/Nodes_34.csv"
     lines_file_path = r"data/processed_data/network_data/Lines_34.csv"
 

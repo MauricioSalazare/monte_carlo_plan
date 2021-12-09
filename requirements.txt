@@ -13,5 +13,5 @@ requests==2.26.0
 cufflinks-py==0.17.3
 plotly==5.4.0
 scikit-image==0.18.3  # For the ternary plot in plotly
-awscli==1.22.21  # For the HPC in Amazon EC2
-aws-parallelcluster==2.11.3
+# awscli==1.22.21  # For the HPC in Amazon EC2
+# aws-parallelcluster==2.11.3  # For the HPC in Amazon EC2

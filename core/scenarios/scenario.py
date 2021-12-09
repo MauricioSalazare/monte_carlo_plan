@@ -35,6 +35,8 @@ class ScenarioGenerator:
         self.n_levels_load_growth = n_levels_load_growth
         self.n_levels_pv_growth = n_levels_pv_growth
         self.n_levels_mixtures = n_levels_mixtures
+        self.mixture_combinations = None
+        self.n_cases = None
 
         self.n_clusters = len(self.copula_load.keys())
         self.cluster_labels = list(range(len(self.copula_load.keys())))
@@ -64,7 +66,12 @@ class ScenarioGenerator:
         percentages_mixtures = np.linspace(0, 1.0, self.n_levels_mixtures + 1).round(1)
         mixture_combinations = [mixture for mixture in product(percentages_mixtures,
                                                                repeat=self.n_clusters) if sum(mixture) == 1]
+
+        self.mixture_combinations = mixture_combinations
         cases = list(product(mixture_combinations, self.percentages_load_growth, self.percentages_pv_growth))
+
+        self.n_cases = len(cases)
+
         print(f"Total cases: {len(cases)}")
 
         return cases
