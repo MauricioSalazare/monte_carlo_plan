@@ -1,0 +1,20 @@
+#!/bin/bash
+# SBATCH --job-name=multithread
+# SBATCH --nodes=1
+# SBATCH --ntasks=1
+# SBATCH --cpus-per-task=70
+# SBATCH --time=01:00:00
+# SBATCH --out=python_job-%j.log
+# SBATCH --error=slurm-%j.err
+# SBATCH --output=slurm-%j.out
+# SBATCH --mail-type=begin
+# SBATCH --mail-type=end
+# SBATCH --mail-user=e.m.salazar.duque@tue.nl
+
+echo "Executing on the machine:" $(hostname)
+
+spack load miniconda3
+source activate montecarlo
+
+python process_solutions_AWS.py
+conda deactivate
