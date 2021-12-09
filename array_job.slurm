@@ -24,7 +24,7 @@ export VECLIB_MAXIMUM_THREADS=$SLURM_CPUS_PER_TASK
 export NUMEXPR_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 spack load miniconda3
-conda activate montecarlo
+source activate montecarlo
 
 python main.py -c $SLURM_ARRAY_TASK_ID
 conda deactivate
