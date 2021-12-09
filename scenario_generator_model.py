@@ -25,7 +25,7 @@ cases = scenario_generator.cases_combinations
 case_dictionary = scenario_generator.create_case_scenarios(case=cases[350],
                                                            n_scenarios=500)
 
-file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"
-with open(file_name_scenario_generator_model, "wb") as pickle_file:
-    pickle.dump(scenario_generator, pickle_file)
+# file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"
+# with open(file_name_scenario_generator_model, "wb") as pickle_file:
+#     pickle.dump(scenario_generator, pickle_file)
 

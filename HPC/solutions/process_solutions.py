@@ -5,7 +5,8 @@ import multiprocessing as mp
 
 def process_file(case_number):
     print(f"Case number: {case_number}")
-    path_file_parent = Path(r"F:\monte_carlo_solutions")
+    # path_file_parent = Path(r"F:\monte_carlo_solutions")
+    path_file_parent = Path(r"C:\Users\20175334\Documents\PycharmProjects\monte_carlo_plan\HPC\solutions\AWS")
     file_name = f"voltage_dict_case_{case_number}_scenarios_500.pkl"
 
     with open(path_file_parent / file_name, "rb") as pickle_file:
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     # solution = process_file(case_number=10)
 
     with mp.Pool(processes=mp.cpu_count()) as pool:
-        solutions = pool.map(process_file, range(756))
+        solutions = pool.map(process_file, range(5))
 
-    with open("solutions.pkl", "wb") as pickle_file:
+    with open("solutions_AWS.pkl", "wb") as pickle_file:
         pickle.dump(solutions, pickle_file)
