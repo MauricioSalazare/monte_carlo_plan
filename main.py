@@ -44,13 +44,14 @@ def solve_case(case_dictionary, ieee_grid, n_scenarios, time_steps):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--case', required=False, type=int, default=10,
+    parser.add_argument('-c', '--case', required=False, type=int, default=1,
                         help="Case number to solve")
     parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=500,
                         help='Number of scenarios to simulate.')
     args, unknown = parser.parse_known_args()
 
-    print(f"Processing case: {args.case}")
+    process_case = int(1000 + args.case)
+    print(f"Processing case: {process_case}")
 
     file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"
     node_file_path = r"data/processed_data/network_data/Nodes_34.csv"
@@ -65,7 +66,7 @@ if __name__ == "__main__":
 
     assert args.case < len(cases), "Input case number is higher than the total expected cases."
 
-    case_dictionary = scenario_generator.create_case_scenarios(case=cases[args.case],
+    case_dictionary = scenario_generator.create_case_scenarios(case=cases[process_case],
                                                                n_scenarios=args.n_scenarios)
 
     voltage_solutions = solve_case(case_dictionary=case_dictionary,
