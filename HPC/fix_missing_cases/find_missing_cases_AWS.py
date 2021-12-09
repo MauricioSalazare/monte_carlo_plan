@@ -5,7 +5,7 @@ from glob import glob
 import os
 
 # path_file_parent = Path(r"F:\monte_carlo_solutions")
-path_file_parent = Path(r"..\solutions\AWS")
+path_file_parent = Path(r"../solutions/AWS")
 
 assert path_file_parent.is_dir(), "Incorrect folder name"
 
