@@ -34,7 +34,7 @@ def max_min_quantiles(voltage_solutions, *, n_scenarios):
     case_processed["max_q_05"] = np.nanquantile(max_volt_grid, q=0.05, axis=0).astype(np.float32)
     case_processed["max_q_10"] = np.nanquantile(max_volt_grid, q=0.10, axis=0).astype(np.float32)
     case_processed["max_q_25"] = np.nanquantile(max_volt_grid, q=0.25, axis=0).astype(np.float32)
-    case_processed["ma:x_q_50"] = np.nanquantile(max_volt_grid, q=0.50, axis=0).astype(np.float32)
+    case_processed["max_q_50"] = np.nanquantile(max_volt_grid, q=0.50, axis=0).astype(np.float32)
     case_processed["max_q_75"] = np.nanquantile(max_volt_grid, q=0.75, axis=0).astype(np.float32)
     case_processed["max_q_90"] = np.nanquantile(max_volt_grid, q=0.90, axis=0).astype(np.float32)
     case_processed["max_q_95"] = np.nanquantile(max_volt_grid, q=0.95, axis=0).astype(np.float32)
@@ -52,6 +52,7 @@ def max_min_quantiles(voltage_solutions, *, n_scenarios):
 
 if __name__ == "__main__":
     # solution = process_file(case_number=10)
+    print(f"Total cpus to use: {mp.cpu_count()}")
 
     with mp.Pool(processes=mp.cpu_count()) as pool:
         solutions = pool.map(process_file, range(7502))
