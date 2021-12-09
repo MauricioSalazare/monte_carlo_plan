@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {0..755}
+for i in {0..251}
  do 
    sbatch file$i.run
 done
