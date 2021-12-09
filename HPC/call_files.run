@@ -1,0 +1,5 @@
+#!/bin/bash
+for i in {0..755}
+ do 
+   sbatch file$i.run
+done
