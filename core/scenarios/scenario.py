@@ -9,10 +9,11 @@ class ScenarioGenerator:
         copula_models:
         mixture_copulas_irradiance:
 
-        n_levels_load_growth:
-        n_levels_pv_growth:
-
-        grid_info: pd.DataFrame
+        n_levels_load_growth: int: Resolution of load growth i.e., growth_res = 1.0 / n_levels_load_growth
+        n_levels_pv_growth: int: Resolution of pv growth i.e., pv_res = 1.0 / n_levels_load_growth
+        n_levels_mixtures: int: Define the grid resolution i.e., grid_res = 1.0 / n_levels_mixtures, which is required
+            for the mixture model. The combination of the mixtures must sum to 1.0.
+        grid_info: pd.DataFrame: Grid parameters (lines)
 
 
     Methods:

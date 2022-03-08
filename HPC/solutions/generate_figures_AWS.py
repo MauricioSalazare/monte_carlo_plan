@@ -23,18 +23,22 @@ def load_solutions(file_name_solutions):
 
     return solutions
 
-file_name_scenario_generator_model = "../../models/scenario_generator_model_new.pkl"
-file_name_solutions = "solutions.pkl"
+file_name_scenario_generator_model = "../../models/scenario_generator_model_new_AWS.pkl"
+# file_name_solutions = "solutions.pkl"
 scenario_generator = load_scenarios_model(file_name_scenario_generator_model)
-solutions = load_solutions(file_name_solutions)
+# solutions = load_solutions(file_name_solutions)
 cases_combinations = scenario_generator.cases_combinations
 
-assert len(cases_combinations) == len(solutions), "The labeling could be wrong"
+# assert len(cases_combinations) == len(solutions), "The labeling could be wrong"
 
-# Assign the case combination to the solutions.
-solutions_dict = {}
-for case_, solution in zip(cases_combinations, solutions):
-    solutions_dict[case_] = solution
+# # Assign the case combination to the solutions.
+# solutions_dict = {}
+# for case_, solution in zip(cases_combinations, solutions):
+#     solutions_dict[case_] = solution
+
+file_name_solutions_dictionary = "solutions_dictionary_AWS.pkl"
+with open(file_name_solutions_dictionary, "rb") as pickle_file:
+    solutions_dict = pickle.load(pickle_file)
 
 x = scenario_generator.percentages_pv_growth
 y = scenario_generator.percentages_load_growth
@@ -62,10 +66,12 @@ mixture_cases = [(0.0, 0.0, 1.0),
                  (0.0, 1.0, 0.0)]
 
 list_matrices = []
+list_of_tuple_cases = []
 for  mixture_case in mixture_cases:
     for i, pv in enumerate(x):
         for j, load  in enumerate(y):
             case = (mixture_case, load, pv)
+            list_of_tuple_cases.append(case)
             matrix_voltages[i, j] = np.max(solutions_dict[case]['max_q_90'])
 
     list_matrices.append(matrix_voltages.copy())
@@ -178,10 +184,20 @@ plt.colorbar(nc, ax=ax)
 
 #%%
 # Get all the critical lines
-
 warnings.filterwarnings("error")
 
 critical_quantile = ["max_q_50", "max_q_75", "max_q_90", "max_q_95"]
+quantile_file = ["50", "75", "90", "95"]
+
+path_file_parent = Path(r"D:\monte_carlo_solutions_AWS_quantiles")
+
+solutions_dict = []
+for quant_name in quantile_file:
+    file_name_solutions_dictionary = f"solutions_dictionary_AWS_quantile_{quant_name}.pkl"
+    with open(path_file_parent / file_name_solutions_dictionary, "rb") as pickle_file:
+        file_solutions_dict = pickle.load(pickle_file)
+        solutions_dict.append(file_solutions_dict)
+
 
 all_mixtures = set([case_mixture_part[0] for case_mixture_part in cases_combinations])
 
@@ -191,13 +207,13 @@ ay_ = ax_t[1, :].flatten()
 
 x_quantiles = []
 y_quantiles =[]
-for ax, ay, critical_quantile_ in zip(ax_, ay_, critical_quantile):
+for ax, ay, critical_quantile_, solutions_dict_ in zip(ax_, ay_, critical_quantile, solutions_dict):
     list_matrices = []
     for  mixture_case in all_mixtures:
         for i, pv in enumerate(x):  # x == pv growth percentiles
             for j, load  in enumerate(y):  # y == load growth percentiles
                 case = (mixture_case, load, pv)
-                matrix_voltages[i, j] = np.max(solutions_dict[case][critical_quantile_])
+                matrix_voltages[i, j] = np.max(solutions_dict_[case][critical_quantile_])
 
         list_matrices.append(matrix_voltages.copy())
 
@@ -216,6 +232,11 @@ for ax, ay, critical_quantile_ in zip(ax_, ay_, critical_quantile):
 
         except UserWarning:
             print("No contour warning")
+            ynew = np.empty(len(x))
+            ynew[:] = np.nan
+
+        except RuntimeWarning:
+            print("Divide by zero")
             ynew = np.empty(len(x))
             ynew[:] = np.nan
 
@@ -241,6 +262,30 @@ for ax, ay, critical_quantile_ in zip(ax_, ay_, critical_quantile):
     ax.set_ylabel("PV Growth")
 
     ax.grid()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #%%

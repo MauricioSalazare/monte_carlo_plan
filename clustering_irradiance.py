@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 import numpy as np
 
+# titles = {0: "Cloudy day",
+#           1: "Sunny day",
+#           2: "Dark/Rainy day"}
+
 
 file_name=r"data/processed_data/consumption_weather/time_series_data.csv"
 file_path_outliers = r"data/processed_data/consumption_weather/outlier_transformers.csv"
@@ -41,12 +45,13 @@ ax.set_title(f"Low irradiance days. Count: ({data_set_low_irradiance.T.shape[1]}
                  fontsize=10, y=1.03, transform=ax.transAxes)
 ax.set_ylim((0, 1000))
 
-low_irr_days = irr_data_all[idx].copy()
-irr_data = irr_data_all[~idx].copy()
+# low_irr_days = irr_data_all[idx].copy()
+# irr_data = irr_data_all[~idx].copy()
+irr_data = irr_data_all.copy()
 
 #%% Clustering
 cluster_irr = ClusteringRLP()
-cluster_irr.cluster_dataset(irr_data, plot_solutions=False)
+cluster_irr.cluster_dataset(irr_data, plot_solutions=False, end=20, axis=0, std_scale=True)
 score_values_irr = cluster_irr.get_clustering_scores()
 fig_scores_irradiance = plot_scores(score_values_irr["CDI"],
                                     score_values_irr["MDI"],
@@ -54,8 +59,9 @@ fig_scores_irradiance = plot_scores(score_values_irr["CDI"],
                                     score_values_irr["CHI"])
 fig_scores_irradiance.suptitle("Scores irradiance")
 
+#%%
 file_name = 'data/processed_data/plots/clustering/irradiance_clusters.html'
-algorithm_name = "KMeans"
+algorithm_name = "GMM"
 n_cluster = 3
 
 irr_cluster_solutions = cluster_irr.get_cluster_labels()
@@ -78,7 +84,7 @@ print(f'Number of components: {X_r.shape[1]}  --  Explained ratio: {pca_model.ex
 pca_data = pd.DataFrame(X_r, index=irr_data.index, columns=['PC' + str(ii) for ii in range(X_r.shape[1])])
 
 cluster_pca = ClusteringRLP()
-cluster_pca.cluster_dataset(pca_data, std_scale=False)
+cluster_pca.cluster_dataset(pca_data, end=20, axis=0, std_scale=True)
 score_values_pca = cluster_pca.get_clustering_scores()
 fig_scores_pca = plot_scores(score_values_pca["CDI"],
                          score_values_pca["MDI"],
@@ -100,9 +106,11 @@ print(f"Cluster count:\n{irr_scaled_frame['cluster'].value_counts()}")
 
 
 #%% MERGE CLUSTER WITH LOW IRRADIANCE DAYS
-CLUSTER_TO_MERGE = input("Select the CLUSTER_TO_MERGE (The one with lowest irradiance)!!!")
-low_irr_days["cluster"] = 2
-irr_data_final = pd.concat([irr_frame, low_irr_days], axis=0).sort_index()
+# CLUSTER_TO_MERGE = input("Select the CLUSTER_TO_MERGE (The one with lowest irradiance)!!!")
+# low_irr_days["cluster"] = 2
+# irr_data_final = pd.concat([irr_frame, low_irr_days], axis=0).sort_index()
+
+irr_data_final = irr_frame.copy()
 
 #%%
 _, ax_ = plt.subplots(1, n_cluster, figsize=(20, 4))
@@ -122,7 +130,7 @@ for cluster_number, ax in enumerate(ax_):
     ax.set_ylim((0, 1000))
 
 #%% Save solutions
-file_path_irradiance_clustering = "data/processed_data/consumption_weather/clustering_irradiance.csv"
-fixed_path = unique_filename(file_path_irradiance_clustering)
-irr_data_final["cluster"].to_csv(fixed_path, index=True)
+# file_path_irradiance_clustering = "data/processed_data/consumption_weather/clustering_irradiance.csv"
+# fixed_path = unique_filename(file_path_irradiance_clustering)
+# irr_data_final["cluster"].to_csv(fixed_path, index=True)
 

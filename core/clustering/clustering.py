@@ -51,13 +51,13 @@ class ClusteringRLP:
 
         self._plot_dict()
 
-    def cluster_dataset(self, data_set_, std_scale=True, sample_names=None, init=2, end=7, plot_solutions=False):
+    def cluster_dataset(self, data_set_, std_scale=True, sample_names=None, init=2, end=7, plot_solutions=False, axis=1):
         """
         Cluster data_set with different clustering algorithms
 
         Arguments:
         ----------
-            data_set (pd.DataFrame):  Columns are variables and rows are samples
+            data_set (pd.DataFrame):  Columns are variables and rows are samples  i.e., (n_samples, n_features)
 
         """
 
@@ -77,7 +77,7 @@ class ClusteringRLP:
             return
 
         if std_scale:
-            data_set = scale(data_set, axis=1)
+            data_set = scale(data_set, axis=axis)
 
         cluster_dbi_scores = dict()
         cluster_mia_scores = dict()
@@ -90,6 +90,7 @@ class ClusteringRLP:
         cluster_model = dict()
 
         for cluster_number in range(init, end):
+            np.random.seed()
             print('-' * 70)
             print(f'Cluster number: {cluster_number}')
             params = {'n_cluster': cluster_number,

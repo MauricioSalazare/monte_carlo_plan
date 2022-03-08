@@ -172,7 +172,7 @@ def rlp_active_reactive(data_set, plot_rlp=False, month=None, year=None):
 
     return pd.concat([rlp_active, rlp_reactive], axis=1)
 
-def rlp_irradiance(data_set, plot_rlp=False, threshold: float = 50):
+def rlp_irradiance(data_set, plot_rlp=False, threshold: float = 50, idx_mask: pd.Series = None):
     data_irradiance = data_set.filter(items=["qg"]).copy()
     data_irradiance['Day'] = data_irradiance.index.dayofyear
     data_irradiance['quarterIndex'] = data_irradiance.index.hour * 100 + data_irradiance.index.minute
@@ -184,7 +184,12 @@ def rlp_irradiance(data_set, plot_rlp=False, threshold: float = 50):
     mapper = dict(zip(pivoted_irradiance_clean.columns, ['q_' + str(ii) for ii in range(1, delta_times + 1)]))
     pivoted_irradiance_clean = pivoted_irradiance_clean.rename(columns=mapper)
 
-    idx = (pivoted_irradiance_clean > threshold).any(axis=0)
+    if idx_mask is not None:
+        assert isinstance(idx_mask, pd.Series), "Mask must be a boolean type pandas Series"
+        idx = idx_mask
+    else:
+        idx = (pivoted_irradiance_clean > threshold).any(axis=0)
+
     pivoted_irradiance_filtered = pivoted_irradiance_clean.iloc[:, idx.values]
 
     if plot_rlp:
@@ -514,14 +519,14 @@ def plot_scores(cdi_scores_dataframe,
     for (index, value), marker in zip(dbi_scores_dataframe.iterrows(), markers_cycle):
         value.plot.line(linewidth=0.4, label=index, marker=marker, ax=ax[2])
     # ax[2].legend()
-    ax[2].set_title('DBI')
+    ax[2].set_title('DBI (Low is good)')
     # ax[2].set_ylim((0.5, 1.75))
     ax[2].set_xticks(np.array(cdi_scores_dataframe.columns))
     ax[2].set_xlabel('Cluster')
 
     for (index, value), marker in zip(chi_scores_dataframe.iterrows(), markers_cycle):
         value.plot.line(linewidth=0.4, label=index, marker=marker, ax=ax[3])
-    ax[3].set_title('CHI')
+    ax[3].set_title('CHI (High is good)')
     # ax[3].set_ylim((250, 600))
     ax[3].set_xticks(np.array(cdi_scores_dataframe.columns))
     ax[3].set_xlabel('Cluster')

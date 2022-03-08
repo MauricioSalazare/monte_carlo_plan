@@ -194,8 +194,11 @@ class EllipticalCopula:
                           'Trying BRUTE FORCE approach with raw-Spearman matrix. Modelling could be incorrect')
             self.covariance_kendall = self.spearman_matrix
         else:
-            warnings.warn('Need a method to find near correlation matrix')
-            return NotImplementedError
+
+            warnings.warn('None of the correlation matrix are positive definite. Need a method to find near correlation matrix')
+            raise NotImplementedError
+
+            # return NotImplementedError
 
 
 
@@ -684,11 +687,12 @@ class EllipticalCopula:
         self.data_frame = data_frame[:, ~idx].copy()
         self.sample_size = self.data_frame.shape[1]
 
-    def _plot_pit(self, variable):
+    def _plot_pit(self, variable: list):
+        assert isinstance(variable, list), "Variable input must be in a list"
         if len(variable) == 1:
             utils.probability_integral_transform(data=self.data_frame,
                                                  plot=True,
-                                                 variable=variable,
+                                                 variable=variable[0],
                                                  interpolation=self.interpolation)
         else:
             for variable_number in variable:

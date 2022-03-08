@@ -22,8 +22,26 @@ knmi_10min = batch_10_min["qg"].to_frame()
 # Hourly resolution
 file_path_1 = r"raw_data/knmi_data/hourly/uurgeg_290_2011-2020/uurgeg_290_2011-2020.txt"
 file_path_2 = r"raw_data/knmi_data/hourly/uurgeg_290_2021-2030/uurgeg_290_2021-2030.txt"
+
+file_path_3 = r"raw_data/knmi_data/hourly/uurgeg_290_1981-1990/uurgeg_290_1981-1990.txt"
+file_path_4 = r"raw_data/knmi_data/hourly/uurgeg_290_1991-2000/uurgeg_290_1991-2000.txt"
+file_path_5 = r"raw_data/knmi_data/hourly/uurgeg_290_2001-2010/uurgeg_290_2001-2010.txt"
+
 batch_1 = pd.read_csv(file_path_1, skiprows=31)
 batch_2 = pd.read_csv(file_path_2, skiprows=31)
+
+# batch_2 = batch_2.apply(pd.to_numeric, errors='coerce')
+# batch_2.apply(lambda x: x.astype("int64"))
+
+batch_3 = pd.read_csv(file_path_3, skiprows=31)
+batch_4 = pd.read_csv(file_path_4, skiprows=31)
+batch_5 = pd.read_csv(file_path_5, skiprows=31)
+
+batch_3 = batch_3.apply(pd.to_numeric, errors='coerce')
+batch_4 = batch_4.apply(pd.to_numeric, errors='coerce')
+batch_5 = batch_5.apply(pd.to_numeric, errors='coerce')
+
+
 
 old_column_names = batch_1.columns.to_list()
 new_column_names = [column_name.strip() for column_name in old_column_names]
@@ -31,8 +49,13 @@ mapper = dict(zip(old_column_names, new_column_names))
 
 batch_1.rename(columns=mapper, inplace=True)
 batch_2.rename(columns=mapper, inplace=True)
+batch_3.rename(columns=mapper, inplace=True)
+batch_4.rename(columns=mapper, inplace=True)
+batch_5.rename(columns=mapper, inplace=True)
 
 batch = pd.concat([batch_1, batch_2], ignore_index=True)
+batch = pd.concat([batch_3, batch_4, batch_5, batch_1, batch_2], ignore_index=True)
+
 batch.HH -= 1
 batch['MINUTES'] = 0
 batch['SECONDS'] = 0
@@ -42,6 +65,7 @@ batch.set_index("TIMESTAMP", drop=True, inplace=True)
 batch.index = batch.index.tz_localize('UTC')
 knmi_hourly = batch["Q"].to_frame(name="qg")
 
+# knmi_hourly = knmi_hourly.dropna(axis=0)
 knmi_hourly = knmi_hourly.resample('H').mean()
 knmi_10min = knmi_10min.resample('10T').mean()
 
@@ -63,10 +87,11 @@ ax.set_ylabel("J/cm^2  or  W/m^w")
 ax.grid()
 ax.legend()
 
-knmi_hourly_w_m2 = knmi_hourly * 2.77
+knmi_hourly_w_m2 = knmi_hourly * 2.77  # 2.77 is the factor fom J/cm^2 to W/m^2
 
 knmi_15min = knmi_10min.resample('15T').mean()
 idx = knmi_15min.index.year == 2020
 knmi_15min_filtered = knmi_15min[idx]
 knmi_15min_filtered.index.rename("date", inplace=True)
-knmi_15min_filtered.to_csv("processed_data/consumption_weather/knmi_15min_qg.csv")
+# knmi_15min_filtered.to_csv("processed_data/consumption_weather/knmi_15min_qg.csv")
+# knmi_hourly_w_m2.to_csv("processed_data/consumption_weather/knmi_hourly_all_w_m2_qg.csv")

@@ -1,3 +1,7 @@
+"""
+Runs the Monte carlo simulation providing the case and number of scenarios.
+"""
+
 # import os
 # os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
 # os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4
@@ -46,11 +50,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--case', required=False, type=int, default=1,
                         help="Case number to solve")
-    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=5,
+    parser.add_argument('-n', '--n_scenarios', required=False, type=int, default=500,
                         help='Number of scenarios to simulate.')
     args, unknown = parser.parse_known_args()
 
-    process_case = int(2000 + args.case)
+    process_case = int(0 + args.case)
     print(f"Processing case: {process_case}")
 
     file_name_scenario_generator_model = "models/scenario_generator_model_new_AWS.pkl"

@@ -1,3 +1,8 @@
+"""
+Merges all the pickle files created by Monte carlo simulations in one big file.
+This is unfeasible for many cases because of RAM limits.
+"""
+
 import numpy as np
 import pickle
 from pathlib import Path
@@ -34,7 +39,7 @@ def max_min_quantiles(voltage_solutions, *, n_scenarios):
     case_processed["max_q_05"] = np.nanquantile(max_volt_grid, q=0.05, axis=0).astype(np.float32)
     case_processed["max_q_10"] = np.nanquantile(max_volt_grid, q=0.10, axis=0).astype(np.float32)
     case_processed["max_q_25"] = np.nanquantile(max_volt_grid, q=0.25, axis=0).astype(np.float32)
-    case_processed["ma:x_q_50"] = np.nanquantile(max_volt_grid, q=0.50, axis=0).astype(np.float32)
+    case_processed["max_q_50"] = np.nanquantile(max_volt_grid, q=0.50, axis=0).astype(np.float32)
     case_processed["max_q_75"] = np.nanquantile(max_volt_grid, q=0.75, axis=0).astype(np.float32)
     case_processed["max_q_90"] = np.nanquantile(max_volt_grid, q=0.90, axis=0).astype(np.float32)
     case_processed["max_q_95"] = np.nanquantile(max_volt_grid, q=0.95, axis=0).astype(np.float32)

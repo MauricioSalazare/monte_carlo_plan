@@ -33,7 +33,7 @@ titles = {0: "Cloudy day",
 fig, ax = plt.subplots(2, 3, figsize=(14, 7))
 for k_cluster in tqdm(range(3)):
     original_data_filled = mixture_model.get_original_data_cluster(k_model=k_cluster)
-    sampled_data_filled = mixture_model.sample_model(n_samples=20, k_model=k_cluster)
+    sampled_data_filled = mixture_model.sample_model(n_samples=200, k_model=k_cluster)
 
     ax[0, k_cluster].plot(original_data_filled.T.values, linewidth=0.5, color="gray")
     ax[0, k_cluster].plot(np.nanmean(original_data_filled.T, axis=1), linewidth=0.5, color='k', label='mean')
@@ -68,8 +68,8 @@ fig.suptitle(f"Copula modelling Irradiance\nUpper row original data - Lower row 
 original_set_frame = []
 sampled_set_frame = []
 
-x_time = "q_23_qg"
-y_time = "q_24_qg"
+x_time = "q_22_qg"
+y_time = "q_23_qg"
 
 for k_cluster in tqdm(range(3)):
     original_set = mixture_model.get_original_data_cluster(k_model=k_cluster)
@@ -88,10 +88,11 @@ sampled_set_frame = pd.concat(sampled_set_frame, axis=0, ignore_index=True)
 fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 sns.kdeplot(data=original_set_frame, x=x_time,y=y_time, hue="k_component", fill=False, linewidths=0.4, zorder=-1, ax=ax[0], palette="tab10")
 sns.scatterplot(data=original_set_frame, x=x_time,y=y_time, hue="k_component", s=20, marker="o", zorder=1, ax=ax[0], palette="tab10")
+ax[0].set_title("Original")
 
 sns.kdeplot(data=sampled_set_frame, x=x_time,y=y_time, hue="k_component", fill=False, linewidths=0.4, zorder=-1, ax=ax[1])
 sns.scatterplot(data=sampled_set_frame, x=x_time,y=y_time, hue="k_component", s=20, marker="o", zorder=1, ax=ax[1], palette="tab10")
-
+ax[1].set_title("Sampled")
 
 #%%
 original_mixture_set = mixture_model.get_original_mixture_data()
@@ -100,6 +101,9 @@ sampled_mixture_set = mixture_model.sample_mixture(n_samples=len(original_mixtur
 fig, ax = plt.subplots(1, 2, figsize=(10, 5))
 sns.kdeplot(data=original_mixture_set, x=x_time,y=y_time, fill=False, linewidths=0.4, zorder=-1, colors="red", ax=ax[0])
 sns.scatterplot(data=original_mixture_set, x=x_time,y=y_time, color="red", s=10, marker="o", zorder=1, ax=ax[0])
+ax[0].set_title("Original")
 
 sns.kdeplot(data=sampled_mixture_set, x=x_time,y=y_time, fill=False, linewidths=0.4, zorder=-1, colors="red", ax=ax[1])
 sns.scatterplot(data=sampled_mixture_set, x=x_time,y=y_time, color="red", s=10, marker="o", zorder=1, ax=ax[1])
+ax[1].set_title("Sampled")
+fig.suptitle("Mixture model sampled")

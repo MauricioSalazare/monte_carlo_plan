@@ -1,3 +1,6 @@
+# Script to process all the possible solutions created by the Monte carlo simulation in AWS cluster.
+# This script is infeasible to run in a computer with low RAM capacity.
+
 import numpy as np
 import pickle
 from pathlib import Path
@@ -21,9 +24,9 @@ def max_min_quantiles(voltage_solutions, *, n_scenarios):
     max_volt_grid = np.zeros((n_scenarios, 48))
     min_volt_grid = np.zeros((n_scenarios, 48))
 
-    for ii in range(33):
+    for ii in range(33):  # 33 is the number of nodes in the grid.
         for jj in range(n_scenarios):
-            for kk in range(48):
+            for kk in range(48):  # 48 is the time resolution (half hour)
                 volt_mag_matrix_grid[ii, jj, kk] = voltage_solutions[(jj, kk)]["v_mag"][ii]
                 max_volt_grid[jj, kk] = voltage_solutions[(jj, kk)]["v_max"]
                 min_volt_grid[jj, kk] = voltage_solutions[(jj, kk)]["v_min"]

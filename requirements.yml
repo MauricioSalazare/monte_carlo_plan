@@ -2,6 +2,7 @@ name: montecarlo
 channels:
   - conda-forge
   - defaults
+  - pvlib
 dependencies:
   - python=3.8
   - numpy==1.21.0
@@ -24,5 +25,7 @@ dependencies:
 #  - python-kaleido==0.2.1
   - plotly==5.4.0
   - scikit-image==0.18.3  # For the ternary plot in plotly
+  - pvlib-python==0.9.0
+  - pot == 0.8.1
 #  - awscli==1.22.21  # For the HPC in Amazon EC2
 #  - aws-parallelcluster==2.11.3  # For the HPC in Amazon EC2
