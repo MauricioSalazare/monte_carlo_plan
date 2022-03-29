@@ -607,7 +607,23 @@ def corr_time_series(loading_series,
 
     return corr_matrix
 
-def mia(data_set, y_labels):  # mean_index_adequacy
+def mia(data_set: np.ndarray, y_labels: np.ndarray) -> np.float64:  # mean_index_adequacy
+    """
+    Compute Mean index Adequacy (MIA) [1]
+
+    [1] G. Chicco, R. Napoli, and F. Piglione, ``Comparisons among clustering techniques for electricity customer
+        classification,'' IEEE Trans. Power Syst., vol. 21, no. 2, pp. 933-940, May 2006, doi: 10.1109/TPWRS.2006.873122.
+
+    Parameters:
+    -----------
+        data_set: np.ndarray: (s x n) Matrix with the samples and feature. s: Samples , n: Features/variables
+        y_labels: np.ndarray: (s, ) 1-D Vector with labels for each sample fo the data_set
+
+    Returns:
+    --------
+        np.float64:  MIA Score
+
+    """
     le = LabelEncoder()
     labels = le.fit_transform(y_labels)  # Normalize the label numbers e.g. [0,0,3,3,10,10,10] => [0,0,1,1,2,2,2]
     n_labels = len(le.classes_)
@@ -628,7 +644,24 @@ def mia(data_set, y_labels):  # mean_index_adequacy
     # For version 2
     return np.sqrt(np.average(intra_dists))
 
-def mdi(data_set, y_labels):
+def mdi(data_set: np.ndarray, y_labels: np.ndarray) -> np.float64:
+    """
+    Compute Modified Dunn Index (MDI) [1]
+
+    [1] J. C. Dunn, ``Well-separated clusters and optimal fuzzy partitions,''
+         J. Cybern., vol. 4, no. 1, pp. 95-104, 1974, doi: 10.1080/01969727408546059.
+
+    Parameters:
+    -----------
+        data_set: np.ndarray: (s x n) Matrix with the samples and feature. s: Samples , n: Features/variables
+        y_labels: np.ndarray: (s, ) 1-D Vector with labels for each sample fo the data_set
+
+    Returns:
+    --------
+        np.float64:  MDI Score
+
+    """
+
     le = LabelEncoder()
     labels = le.fit_transform(y_labels)  # Normalize the label numbers
     n_labels = len(le.classes_)
@@ -664,18 +697,31 @@ def mdi(data_set, y_labels):
     return np.max(intra_dists_cluster) / np.min(centroid_distances, axis=1).min()
 
 def cdi(data_set, y_labels):
-    '''
-    Clustering dispersion indicator (CDI)
-        CDI =  \hat{d}(C)^{-1}  \sqrt{ K^{-1}  \sum^{K}_{k=1}  \hat{d}^2 (D_k)  }
+    """
+    Compute Clustering dispersion indicator (CDI) [1]
 
-        \hat{D_k} = \sqrt{1/(2M)  \sum^{M}_{m=1}  d^2(x^(m), X)}   where X is all the points in the same cluster k.
+    CDI =  \hat{d}(C)^{-1}  \sqrt{ K^{-1}  \sum^{K}_{k=1}  \hat{d}^2 (D_k)  }
+
+    \hat{D_k} = \sqrt{1/(2M)  \sum^{M}_{m=1}  d^2(x^(m), X)}   where X is all the points in the same cluster k.
+
+    This is calculated summing the upper triangular matrix of the matrix distances between points in the group.
+    The sum of the upper triangular makes that the coefficient 1/(2M) became 1/M, because you are not summing
+    repetitive distances e.g. (x_1 - x_2)^2 == (x_2 - x_1)^2.
+
+    [1] G. Chicco, R. Napoli, and F. Piglione, ``Comparisons among clustering techniques for electricity customer
+        classification,'' IEEE Trans. Power Syst., vol. 21, no. 2, pp. 933-940, May 2006, doi: 10.1109/TPWRS.2006.873122.
 
 
-        This is calculated summing the upper triangular matrix of the matrix distances between points in the group.
-        The sum of the upper triangular makes that the coefficient 1/(2M) became 1/M, because you are not summing
-        repetitive distances e.g. (x_1 - x_2)^2 == (x_2 - x_1)^2.
+    Parameters:
+    -----------
+        data_set: np.ndarray: (s x n) Matrix with the samples and feature. s: Samples , n: Features/variables
+        y_labels: np.ndarray: (s, ) 1-D Vector with labels for each sample fo the data_set
 
-    '''
+    Returns:
+    --------
+        np.float64:  CDI Score
+
+    """
 
     le = LabelEncoder()
     labels = le.fit_transform(y_labels)  # Normalize the label numbers
