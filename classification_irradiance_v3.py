@@ -341,8 +341,8 @@ def day_processing_mapper(data_aligned_sliced: pd.DataFrame, IRR_THRESHOLD: int)
                                             values denoted by (y_).
                         "x_": np.ndarray: x-axis with the measured time steps where there is solar irradiance
                         "y_": np.ndarray: y-values with the SOLAR MODEL irradiance values [W/m^2] (ONLY DAYLIGHT)
-                        "x_prime":  np.ndarray: x-axis-stretched to the maximum number of time steps with solar irradiance
-                                            during the year.
+                        "x_prime":  np.ndarray: x-axis-stretched to the maximum number of time steps with solar
+                                            irradiance during the year.
                         "y_prime":  np.ndarray: y-values-stretched or interpolated of irradiance values from the
                                             SOLAR MODEL!! [W/m^2] This has values of ONLY DAYLIGHT.
                         "GHI_t_all": np.ndarray: This is the irradiance values of the whole SOLAR MODEL profile which
@@ -356,7 +356,7 @@ def day_processing_mapper(data_aligned_sliced: pd.DataFrame, IRR_THRESHOLD: int)
                         "y_real_prime":  np.array: y-values-stretched or interpolated of irradiance values from the
                                             MEASURED DATA!! [W/m^2] This has values of ONLY DAYLIGHT.
                         "y_real_prime_ci": np.array: profile of the Clear-Sky-Index (CSI) for the measured profile.
-                        "CSI_DAY": float: This is the ratio between the average measured data and average
+                        "CSI_day": float: This is the ratio between the average measured data and average
                                             solar model irradiance.
                         "q_t_all": np.ndarray: This is the irradiance values of the whole MEASURED profile which includes
                                             NIGHT times and DAYLIGHT. [W/m^2]
@@ -616,6 +616,7 @@ def generate_profiles(pi_mixture, mvt_models: list, day_mapping, data_aligned_sl
     label_vector_np = np.array(label_vector)
     sample_set_concat = pd.concat(sample_set, axis=0, ignore_index=True)
     sample_set_concat["cluster"] = label_vector_np
+    # Shuffle, otherwise the sunny, cloudy and dark days will be next to each other
     sample_set_concat_shuffled = sample_set_concat.sample(frac=1).reset_index(drop=True)
     sample_set_concat_shuffled.index = irr_solar_model_clustered.index.copy()
 
@@ -878,7 +879,6 @@ x_axis = pd.date_range(start="2021-11-01", periods=n_steps, freq=RESAMPLE)
 # ax = ax.flatten()
 # plt.subplots_adjust(wspace=0.5, hspace=0.5, right=0.99, top=0.95)
 
-
 fig = plt.figure(figsize=(3.5, 4))
 gs = gridspec.GridSpec(2, 2, wspace=0.35, hspace=0.35, left=0.15, bottom=0.05, right=0.99, top=0.95, width_ratios=[1, 1], height_ratios=[1, 1.5])
 ax1 = fig.add_subplot(gs[0])
@@ -909,7 +909,7 @@ ax3.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
 ax3.set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)))
 ax3.set_ylim((-10, 1100))
 ax3.set_xlabel("Time of day", fontsize=6)
-ax3.set_ylabel("[W/m${}^2$]", fontsize=6)
+ax3.set_ylabel("W/m${}^2$", fontsize=6)
 ax3.set_title("(c)")
 
 for data_plot_, ci_daily_ in zip(data_list[3].T, csi_measured_profiles):
@@ -922,7 +922,7 @@ cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.ge
                       pad=0.2,
                       ax=[ax3, ax4])
 
-cbar_2.ax.set_xlabel('Daily clear index [$K_d$]')
+cbar_2.ax.set_xlabel('Daily clear sky index [$K_d$]')
 ax4.set_ylim((-10, 1100))
 ax4.set_xlabel("Common time frame - $x^{'}$", fontsize=6)
 ax4.yaxis.set_major_formatter(ticker.NullFormatter())
@@ -932,22 +932,25 @@ plt.savefig('figures/solar_model_proposal/fig_1.png', dpi=700, bbox_inches='tigh
 
 #%%
 fig, ax = plt.subplots(3, 2, figsize=(4, 6))
-plt.subplots_adjust(wspace=0.45, hspace=0.45, left=0.1, right=0.99, top=0.95, bottom=0.1)
+plt.subplots_adjust(wspace=0.65, hspace=0.65, left=0.1, right=0.99, top=0.93, bottom=0.06)
 ax[0,0].axis("off")
 ax[2,0].axis("off")
 ax_ = [ax[0,1], ax[1,1], ax[2,1]]
+titles_list = ["(f)\nCluster 1", "(g)\nCluster 2", "(h)\nCluster 3"]
 
 for data_plot_, ci_daily_ in zip(data_list[4].T, csi_measured_profiles):
     ax[1, 0].plot(data_plot_, linewidth=0.4, marker='.', markersize=2,
              markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)),
              color=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)))
 ax[1, 0].set_ylim((0, 2))
+ax[1, 0].set_title("(e)", fontsize="x-large")
+ax[1, 0].set_xlabel("Common time frame - $x^{'}$")
+ax[1, 0].set_ylabel("Clear sky index - CSI - $K_t$")
 
-for jj, (ax_i, cluster_) in enumerate(zip(ax_, range(N_CLUSTERS))):  # Columns
-    if jj == 0:
-        ax_i.set_title("(f)\nCluster 1")
-    else:
-        ax_i.set_title(f"Cluster {jj + 1}")
+for jj, (ax_i, cluster_, titles_) in enumerate(zip(ax_, range(N_CLUSTERS), titles_list)):  # Columns
+    ax_i.set_title(titles_, fontsize="x-large")
+    ax_i.set_ylabel("CSI")
+
     if jj == 2:
         ax_i.set_xlabel("Common time frame - $x^{'}$")
     idx_cluster = label_frame["cluster"] == cluster_
@@ -957,17 +960,46 @@ for jj, (ax_i, cluster_) in enumerate(zip(ax_, range(N_CLUSTERS))):  # Columns
     ax_i.set_ylim((0, 2))
 plt.savefig('figures/solar_model_proposal/fig_2.png', dpi=700, bbox_inches='tight')
 
+#%%
+DAY_TO_PLOT = 150
+DAY_TO_PLOT = 170
+
+fig, ax = plt.subplots(1, 2, figsize=(4.5, 2))
+plt.subplots_adjust(right=0.99, left=0.14, wspace=0.9, bottom=0.2)
+ax[0].plot(day_mapping[DAY_TO_PLOT]["y_real_prime_ci"], linewidth=1.4, marker='.', markersize=2,
+             markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])),
+             color=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])))
+ax[0].set_ylim((0,2))
+ax[0].set_xlabel("Common time frame - $x^{'}$")
+ax[0].set_ylabel("CSI")
+ax[0].set_title("(i)", fontsize="x-large")
+
+ax[1].plot(day_mapping[DAY_TO_PLOT]["y_prime"], linewidth=1.4, color="green", marker=".", markersize=0.3)
+ax[1].set_ylim((-10, 1100))
+ax[1].set_xlabel("Common time frame - $x^{'}$")
+ax[1].set_ylabel("W/m${}^2$")
+ax[1].set_title("(j)", fontsize="x-large")
+plt.savefig('figures/solar_model_proposal/fig_3.png', dpi=700, bbox_inches='tight')
 
 #%%
-fig, ax = plt.subplots(1, 1, figsize=(3.5, 2))
-ax.plot()
+fig, ax = plt.subplots(1, 2, figsize=(4.5, 2))
+plt.subplots_adjust(right=0.99, left=0.14, wspace=0.9, bottom=0.2)
+ax[0].plot(day_mapping[DAY_TO_PLOT]["y_real_prime"], linewidth=1.4, marker='.', markersize=2,
+             markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])),
+             color=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])))
+ax[0].set_ylim((-10, 1100))
+ax[0].set_xlabel("Common time frame - $x^{'}$")
+ax[0].set_ylabel("W/m${}^2$")
+ax[0].set_title("(k)", fontsize="x-large")
 
-
-
-
-
-
-
+ax[1].plot(x_axis, day_mapping[DAY_TO_PLOT]["q_t_all"], linewidth=1.4, color="green", marker=".", markersize=0.3)
+ax[1].xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+ax[1].set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)))
+ax[1].set_ylim((-10, 1100))
+ax[1].set_xlabel("Time of day")
+ax[1].set_ylabel("W/m${}^2$")
+ax[1].set_title("(l)", fontsize="x-large")
+plt.savefig('figures/solar_model_proposal/fig_4.png', dpi=700, bbox_inches='tight')
 
 
 # ======================================================================================================================
@@ -1310,13 +1342,23 @@ pi_mixture = []
 for cluster_ in range(n_clusters):
     mvt_models.append(models_per_cluster[cluster_]["models"]["MVT"])
     pi_mixture.append(models_per_cluster[cluster_]["n_profiles_original"])
-pi_mixture = np.array(pi_mixture) / np.array(pi_mixture).sum()
-# pi_mixture = np.array([0.0, 1.0, 0.0])  # Dark days
-# pi_mixture = np.array([0.0, 0.0, 1.0])  # Sunny days
-# TODO: pi_mixture could be different to sample the model
 
-profile_series, pivoted_series = generate_profiles(pi_mixture, mvt_models, day_mapping, data_aligned_sliced, START_DATE, END_DATE)
-profile_series_concat = pd.concat([profile_series, data_aligned_sliced[["ghi_haurwitz", "qg"]]], axis=1)
+pi_mixture_original = np.array(pi_mixture) / np.array(pi_mixture).sum()
+pi_mixture_dark = np.array([0.0, 1.0, 0.0])  # Dark days
+pi_mixture_sunny = np.array([0.0, 0.0, 1.0])  # Sunny days
+
+pi_mixtures = [pi_mixture_original, pi_mixture_sunny, pi_mixture_dark]
+profiles_sampled = []
+pivoted_series_sampled = []
+
+for pi_mixture_ in tqdm(pi_mixtures):
+    profile_series, pivoted_series = generate_profiles(pi_mixture_, mvt_models, day_mapping, data_aligned_sliced, START_DATE, END_DATE)
+    profile_series_concat = pd.concat([profile_series, data_aligned_sliced[["ghi_haurwitz", "qg"]]], axis=1)
+
+    profiles_sampled.append(profile_series_concat)
+    pivoted_series_sampled.append(pivoted_series)
+
+
 
 fig, ax = plt.subplots(1, 1, figsize=(15,2))
 plt.subplots_adjust(left=0.05, right=0.97)
