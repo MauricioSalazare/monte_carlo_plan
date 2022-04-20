@@ -485,7 +485,7 @@ class EllipticalCopula:
             if not silent: print(f'Total samples so far: {total_samples}\n\n')
 
         if iteration > max_iteration:
-            raise Warning('Something is wrong with the model... you can not sample from it.')
+            raise RuntimeError('Something is wrong with the model... you can not sample from it.')
 
         samples_complete = samples_complete[:, 1: n_samples + 1]  # Drop first column that it is only zeros
 
