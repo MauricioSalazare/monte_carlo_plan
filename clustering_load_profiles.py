@@ -17,10 +17,10 @@ ap = rlp_transformer(data, kwargs_filter= {"regex": "_ap$"})
 
 #%% Clustering
 cluster_ap = ClusteringRLP()
-cluster_ap.cluster_dataset(ap, plot_solutions=False)
+cluster_ap.cluster_dataset(ap, plot_solutions=False, init=2, end=15)
 score_values_ap = cluster_ap.get_clustering_scores()
 plot_scores(score_values_ap["CDI"],
-            score_values_ap["MDI"],
+            score_values_ap["SI"],
             score_values_ap["DBI"],
             score_values_ap["CHI"])
 
@@ -40,6 +40,6 @@ plotly_plot_solutions(ap_scaled_frame, algorithm_name=algorithm_name, n_cluster=
 #%% 1. create clustering results .csv file for transformers
 file_path_load_clustering = "data/processed_data/consumption_weather/clustering_load.csv"
 fixed_path = unique_filename(file_path_load_clustering)
-ap_frame['cluster'].to_csv(fixed_path, index=True)
+# ap_frame['cluster'].to_csv(fixed_path, index=True)
 
 

@@ -347,16 +347,16 @@ for ii, regex_dict in zip(range(2), filter_dict):
 
     if ii == 0:
         ax[ii].set_ylim((-51, 430))
-        ax[ii].set_ylabel("Active power [kW]")
+        ax[ii].set_ylabel("Active power [kW]", fontsize="large")
 
     if ii == 1:
         cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('inferno')),
                               ax=ax[ii])
-        cbar_2.ax.set_ylabel('[GWh/year]')
+        cbar_2.ax.set_ylabel('[GWh/year]', fontsize="large")
         l3 = cbar_2.ax.hlines(y=0.429440, xmin=0, xmax=10, linewidth=2, color="blue", label="Low Energy - GWh/year")
         l4 = cbar_2.ax.hlines(y=1.767857, xmin=0, xmax=10, linewidth=2, color="red", label="High Energy - GWh/year")
 
-        ax[ii].set_ylabel("Reactive power [kVAr]")
+        ax[ii].set_ylabel("Reactive power [kVAr]", fontsize="large")
         ax[ii].set_ylim((-28, 180))
 
         lgs = l1 + l2 + [l3] + [l4]
@@ -370,6 +370,6 @@ for ii, regex_dict in zip(range(2), filter_dict):
                      handlelength=1.5)
 
     ax[ii].set_title(title_list[ii], fontsize="large")
-    ax[ii].set_xlabel("Time of day")
+    ax[ii].set_xlabel("Time of day", fontsize="large")
 
 plt.savefig('load_model/sampling_conditioned.png', dpi=700, bbox_inches='tight')

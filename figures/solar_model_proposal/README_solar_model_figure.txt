@@ -1,0 +1,1 @@
+The solar model figure is a composite of several .png files that are assembled in a .svg file on inkscape.
