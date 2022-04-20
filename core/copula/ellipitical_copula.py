@@ -92,6 +92,7 @@ class EllipticalCopula:
 
         self.sample_size = None
         self.data_frame = None
+        self.variable_mapping = None  # Dictionary with the variable names and enumeration. e.g., {"day_energy": "x1"}
 
         if isinstance(data_frame, pd.DataFrame):
             self._check_clean_data_frame(data_frame.values)
@@ -355,6 +356,9 @@ class EllipticalCopula:
             print('\n\n\n\n')
 
     def sample(self, n_samples=5000, conditional=False, variables={'x3': 3.3}, negative_clamp=False, drop_inf=False, silent=True):
+        # TODO: Change or update the wa
+
+
         '''
         Returns a np.array (rows are variables (time-steps), columns are instances)
         :param n_samples:

@@ -211,10 +211,10 @@ def data_loader(file_time_series,
 
     return data, clusters, annual_energy
 
-def create_rlp_and_annual_energy_for_all_clusters(file_time_series,
-                                                  file_transformer_outliers,
-                                                  file_load_clusters,
-                                                  file_annual_energy):
+def create_rlp_and_annual_energy_for_all_clusters(file_time_series: str,
+                                                  file_transformer_outliers: str,
+                                                  file_load_clusters: str,
+                                                  file_annual_energy: str) -> dict:
 
     data, clusters, annual_energy = data_loader(file_time_series,
                                                 file_transformer_outliers,
@@ -235,11 +235,34 @@ def create_rlp_and_annual_energy_for_all_clusters(file_time_series,
 
     return rlp_clusters
 
-def create_copula_models_for_all_clusters(file_time_series,
-                                          file_transformer_outliers,
-                                          file_load_clusters,
-                                          file_annual_energy,
+def create_copula_models_for_all_clusters(file_time_series: str,
+                                          file_transformer_outliers: str,
+                                          file_load_clusters: str,
+                                          file_annual_energy: str,
                                           add_reactive_power=True):
+    """
+    Builds copula models for each cluster. Each cluster is a group of time series of load consumption.
+
+    Parameters:
+    ----------
+        file_time_series: str: file path of the time series dataset:
+            The file contains: A column with a date stamp. Columns with the active and reactive power consumption
+            for each transformer. i.e., 2 columns per transformer (one for active, one for reactive).
+            One column with the solar global solar irradiance.
+        file_transformer_outliers: str: file path of the file with the names of transformers that are considered outliers
+        file_load_clusters: str: file path of the file with the names of the transformer and its cluster label
+        file_annual_energy: str: file path with a file with transformer names and its annual energy consumption
+        add_reactive_power: Bool: True if the final copula model includes the reactive power variables.
+
+    Returns:
+    -------
+        copula_models: dict: dict: Nested dictionary with cluster number as the key. The second key could be:
+            "copula" for the copula model, "original_data" for the original dataset to build the copula, and
+            "idx_irradiance" with a boolean mask used to filter the sunlight times of the daily irradiance profile.
+
+            e.g., copula_models[1]["copula"] -> retrieves the copula model object of the cluster 1.
+
+    """
 
     data, clusters, annual_energy = data_loader(file_time_series,
                                                 file_transformer_outliers,
