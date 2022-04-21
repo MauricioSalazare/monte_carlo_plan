@@ -106,7 +106,7 @@ for ii, (ax_0, ax_1, ax_2, ax_3, mixture_case) in enumerate(zip(ax_0_row,
                            ha="center", va="center", color="w", fontsize="x-small")
 
     ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_95"], linestyle="--", color="r", linewidth=0.5)
-    ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_90"], linestyle="--", color="b", linewidth=0.5)
+    ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_90"], linestyle="--", color="b", linewidth=0.5, )
     ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_75"], linestyle="--", color="g", linewidth=0.5)
     ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_50"], linestyle="-", color="r", linewidth=0.5)
     ax_1.plot(solutions_dict[(mixture_case, 0.0, 1.0)]["max_q_25"], linestyle="-.", color="g", linewidth=0.5)

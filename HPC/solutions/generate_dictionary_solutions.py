@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 from pathlib import Path
 import multiprocessing as mp
+from tqdm import tqdm
 
 QUANTILE_DICT = {
                  "05": {"max_tag": "max_q_05",
@@ -147,7 +148,7 @@ def generate_quantile_files(cases_combinations: list, quantile: str):
     solutions_dict = {}
     total_cases = len(cases_combinations)
     # quantile = "05"
-    for ii, tuple_case in enumerate(cases_combinations):
+    for ii, tuple_case in tqdm(enumerate(cases_combinations)):
         print(f"iteration: {ii + 1} of {total_cases}")
         solutions_dict[tuple_case] = process_quantiles(ii, quantile=quantile)
 
@@ -192,10 +193,14 @@ if __name__ == "__main__":
     # generate_quantile_files(cases_combinations, "05")
 
     list_quantiles = [
+                      (cases_combinations, "05"),
+                      (cases_combinations, "10"),
+                      (cases_combinations, "25")
                       # (cases_combinations, "50"),
-                      (cases_combinations, "75"),
-                      (cases_combinations, "90"),
-                      (cases_combinations, "95")]
+                      # (cases_combinations, "75"),
+                      # (cases_combinations, "90"),
+                      # (cases_combinations, "95")
+    ]
 
     print(f"Total cpus to use: {mp.cpu_count()}")
 

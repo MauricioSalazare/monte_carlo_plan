@@ -1256,341 +1256,341 @@ x_t_cloudy = x_t_cloudy[CLOUDY_DAY]
 y_t_cloudy = y_t_cloudy[CLOUDY_DAY]
 
 
-#%% Fractal dimension example
-import matplotlib.patches as patches
-from matplotlib.ticker import NullFormatter
+# #%% Fractal dimension example
+# import matplotlib.patches as patches
+# from matplotlib.ticker import NullFormatter
+#
+# mpl.rc('text', usetex=True)
+#
+# fig, ax = plt.subplots(1, 2, figsize=(5, 2.5))
+# plt.subplots_adjust(right=0.99, left=0.11, bottom=0.14, top=0.89, wspace=0.3)
+#
+# lg1 = ax[0].plot(profile_clear[CLEAR_DAY], color="red", label="Sunny day")
+# ax_2 = ax[0].twiny()
+# lg2 = ax_2.plot(profile_cloudy[CLOUDY_DAY], color="blue", label="Cloudy day")
+# ax_2.xaxis.set_major_formatter(NullFormatter())
+#
+# lgs = lg1 + lg2
+# lgs_names = [l.get_label() for l in lgs]
+#
+# # ax_2.set_xlabel("Time stamp - Cloudy day", fontsize="large")
+# ax[0].set_xlabel("Time step", fontsize="large")
+# ax[0].set_ylim(0, 1150)
+# ax[0].set_ylabel("W/m${}^2$", fontsize="large")
+# ax[0].legend(lgs, lgs_names, loc="upper right", fontsize="medium")
+# # ax_2.legend(fontsize="small")
+# ax[0].set_title("(a)", fontsize="large")
+#
+#
+# x_coord = []
+# y_coord = []
+# dx_coord = []
+# dy_coord = []
+# rect_set = []
+#
+# for i in range(4):
+#     x = i * 10
+#     x_coord.append(x)
+#
+#     y = profile_cloudy[CLOUDY_DAY][x]
+#     y_coord.append(y)
+#
+#     dx = 10
+#     dx_coord.append(10)
+#
+#     dy = profile_cloudy[CLOUDY_DAY][x + dx] - y
+#     dy_coord.append(dy)
+#
+#     rect_set.append(patches.Rectangle((x, y), width=dx, height=dy, linewidth=1, edgecolor='b', facecolor='none', linestyle="--"))
+#
+# for rect in rect_set:
+#     ax_2.add_patch(rect)
+#
+# ax_2.vlines(x=x_coord[3], ymin=0, ymax=y_coord[2], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
+# ax_2.vlines(x=x_coord[3] + dx_coord[3], ymin=0, ymax=y_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
+#
+# ax_2.hlines(y=y_coord[3], xmin=0, xmax=x_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
+# ax_2.hlines(y=y_coord[3] + dy_coord[3], xmin=0, xmax=x_coord[3] + dx_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
+#
+# ax_2.arrow(x=x_coord[3] - 10, y=82, dx=10, dy=0, length_includes_head=True, head_width=50, head_length=5, shape="full", color="b")
+# ax_2.arrow(x=x_coord[3] + dx_coord[3] + 10, y=82, dx=-10, dy=0, length_includes_head=True, head_width=50, head_length=5, shape="full", color="b")
+#
+# ax_2.text(x=x_coord[3] + dx_coord[3]/2 - 0.5, y=82, s=r"$\Delta \tau$", ha="center", va="center", fontsize=10, color="b")
+#
+# ax_2.text(x=x_coord[1], y=631, s=r"$q_t$", ha="left", va="center", fontsize=10, color="b")
+# ax_2.text(x=x_coord[1], y=823, s=r"$q_{t+\Delta \tau}$", ha="left", va="center", fontsize=10, color="b")
+#
+#
+# ax[1].scatter(x_t_clear, y_t_clear, color="red", marker="x", s=15)
+# ax[1].plot(x_t_clear, rg_fd_clear.intercept + rg_fd_clear.slope * x_t_clear, color='red', linewidth=0.4, label='Fitted line sunny')
+#
+# ax[1].text(x=-0.56, y=6.00, s=f"FD={round(fd_clear, 2)}", ha="center", va="center", fontsize=10, color="r")
+# ax[1].text(x=-1.50, y=7.31, s=f"FD={round(fd_cloudy, 2)}", ha="center", va="center", fontsize=10, color="b")
+#
+# ax[1].scatter(x_t_cloudy, y_t_cloudy, color="blue", marker="o", s=15)
+# ax[1].plot(x_t_cloudy, rg_fd_cloudy.intercept + rg_fd_cloudy.slope*x_t_cloudy, color='blue', linewidth=0.4, label='Fitted line cloudy')
+# ax[1].legend(fontsize="medium")
+#
+# ax[1].set_ylim((3.5, 9))
+# ax[1].set_xlim((-3.3, 0.1))
+#
+# ax[1].set_xlabel(r"$\ln(1/\Delta \tau)$", fontsize="large")
+# ax[1].set_ylabel(r"$\ln($S$(\Delta \tau) / {\Delta \tau}^2)$", fontsize="large")
+# ax[1].set_title("(b)", fontsize="large")
+#
+# plt.savefig('figures/solar_model_proposal/fractal_dimension.pdf', dpi=700, bbox_inches='tight')
 
-mpl.rc('text', usetex=True)
-
-fig, ax = plt.subplots(1, 2, figsize=(5, 2.5))
-plt.subplots_adjust(right=0.99, left=0.11, bottom=0.14, top=0.89, wspace=0.3)
-
-lg1 = ax[0].plot(profile_clear[CLEAR_DAY], color="red", label="Sunny day")
-ax_2 = ax[0].twiny()
-lg2 = ax_2.plot(profile_cloudy[CLOUDY_DAY], color="blue", label="Cloudy day")
-ax_2.xaxis.set_major_formatter(NullFormatter())
-
-lgs = lg1 + lg2
-lgs_names = [l.get_label() for l in lgs]
-
-# ax_2.set_xlabel("Time stamp - Cloudy day", fontsize="large")
-ax[0].set_xlabel("Time step", fontsize="large")
-ax[0].set_ylim(0, 1150)
-ax[0].set_ylabel("W/m${}^2$", fontsize="large")
-ax[0].legend(lgs, lgs_names, loc="upper right", fontsize="medium")
-# ax_2.legend(fontsize="small")
-ax[0].set_title("(a)", fontsize="large")
 
 
-x_coord = []
-y_coord = []
-dx_coord = []
-dy_coord = []
-rect_set = []
+#%% Clustering using Clear index and Fractal Index.
+csi_daily_values = day_mapping_frame["CSI_day"].dropna()
+fd_dict= {}
+for day_, data_dict_ in day_mapping_frame["metrics"].dropna().iteritems():
+    fd_dict[day_] = data_dict_["FD"]["FD_value"].item()
+fd_values = pd.DataFrame.from_dict(fd_dict, orient="index", columns=["FD"])
+csi_fd = pd.concat([csi_daily_values, fd_values], ignore_index=False, axis=1)
 
-for i in range(4):
-    x = i * 10
-    x_coord.append(x)
+# Hard Rules
+csi_fd_clustered = csi_fd.copy()
+csi_fd_clustered["cluster"] = 0
 
-    y = profile_cloudy[CLOUDY_DAY][x]
-    y_coord.append(y)
+idx_clear_sky = (csi_fd["CSI_day"] >= 0.6) & ((1 < csi_fd["FD"]) & (csi_fd["FD"]<=1.4))
+idx_partialy_cloudy = (csi_fd["CSI_day"] >= 0.6) & ((1.4 < csi_fd["FD"]) & (csi_fd["FD"]<=2.0))
+# idx_cloudy = (1.25 < csi_fd["FD"]) | ((csi_fd["FD"] <= 1.25) & (csi_fd["CSI_day"]<=0.5))
+idx_cloudy = csi_fd["CSI_day"]<=0.6
 
-    dx = 10
-    dx_coord.append(10)
+csi_fd_clustered.loc[idx_clear_sky, ["cluster"]] = 0
+csi_fd_clustered.loc[idx_partialy_cloudy, ["cluster"]] = 2
+csi_fd_clustered.loc[idx_cloudy, ["cluster"]] = 1
 
-    dy = profile_cloudy[CLOUDY_DAY][x + dx] - y
-    dy_coord.append(dy)
-
-    rect_set.append(patches.Rectangle((x, y), width=dx, height=dy, linewidth=1, edgecolor='b', facecolor='none', linestyle="--"))
-
-for rect in rect_set:
-    ax_2.add_patch(rect)
-
-ax_2.vlines(x=x_coord[3], ymin=0, ymax=y_coord[2], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
-ax_2.vlines(x=x_coord[3] + dx_coord[3], ymin=0, ymax=y_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
-
-ax_2.hlines(y=y_coord[3], xmin=0, xmax=x_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
-ax_2.hlines(y=y_coord[3] + dy_coord[3], xmin=0, xmax=x_coord[3] + dx_coord[3], linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
-
-ax_2.arrow(x=x_coord[3] - 10, y=82, dx=10, dy=0, length_includes_head=True, head_width=50, head_length=5, shape="full", color="b")
-ax_2.arrow(x=x_coord[3] + dx_coord[3] + 10, y=82, dx=-10, dy=0, length_includes_head=True, head_width=50, head_length=5, shape="full", color="b")
-
-ax_2.text(x=x_coord[3] + dx_coord[3]/2 - 0.5, y=82, s=r"$\Delta \tau$", ha="center", va="center", fontsize=10, color="b")
-
-ax_2.text(x=x_coord[1], y=631, s=r"$q_t$", ha="left", va="center", fontsize=10, color="b")
-ax_2.text(x=x_coord[1], y=823, s=r"$q_{t+\Delta \tau}$", ha="left", va="center", fontsize=10, color="b")
-
-
-ax[1].scatter(x_t_clear, y_t_clear, color="red", marker="x", s=15)
-ax[1].plot(x_t_clear, rg_fd_clear.intercept + rg_fd_clear.slope * x_t_clear, color='red', linewidth=0.4, label='Fitted line sunny')
-
-ax[1].text(x=-0.56, y=6.00, s=f"FD={round(fd_clear, 2)}", ha="center", va="center", fontsize=10, color="r")
-ax[1].text(x=-1.50, y=7.31, s=f"FD={round(fd_cloudy, 2)}", ha="center", va="center", fontsize=10, color="b")
-
-ax[1].scatter(x_t_cloudy, y_t_cloudy, color="blue", marker="o", s=15)
-ax[1].plot(x_t_cloudy, rg_fd_cloudy.intercept + rg_fd_cloudy.slope*x_t_cloudy, color='blue', linewidth=0.4, label='Fitted line cloudy')
-ax[1].legend(fontsize="medium")
-
-ax[1].set_ylim((3.5, 9))
-ax[1].set_xlim((-3.3, 0.1))
-
-ax[1].set_xlabel(r"$\ln(1/\Delta \tau)$", fontsize="large")
-ax[1].set_ylabel(r"$\ln($S$(\Delta \tau) / {\Delta \tau}^2)$", fontsize="large")
-ax[1].set_title("(b)", fontsize="large")
-
-plt.savefig('figures/solar_model_proposal/fractal_dimension.pdf', dpi=700, bbox_inches='tight')
+csi_fd_clustered_copula = csi_fd_clustered.copy()
 
 #%%
+np.random.seed(5)
+samples_per_cluster_v2 = sample_models_per_cluster(models_per_cluster)
+profiles_per_cluster = process_profiles_from_samples(samples_per_cluster_v2, day_mapping, label_frame)
 
-# #%% Clustering using Clear index and Fractal Index.
-# csi_daily_values = day_mapping_frame["CSI_day"].dropna()
-# fd_dict= {}
-# for day_, data_dict_ in day_mapping_frame["metrics"].dropna().iteritems():
-#     fd_dict[day_] = data_dict_["FD"]["FD_value"].item()
-# fd_values = pd.DataFrame.from_dict(fd_dict, orient="index", columns=["FD"])
-# csi_fd = pd.concat([csi_daily_values, fd_values], ignore_index=False, axis=1)
+N_CLUSTERS_v2 = 3
+ALGORITHM_v2 = "KMeans"
+label_frame_v2 = pd.DataFrame(ap_cluster_solutions.loc[ALGORITHM_v2, N_CLUSTERS_v2], columns=["cluster"],
+                              index=clear_index_day_frame.index)
+
+csi_fd_clustered_copula["cluster"] = label_frame_v2["cluster"].values
+
+# Generated profiles by MVG and MVT models
+frame_generated_by_model = {}
+for model_type_ in ["MVT", "MVG"]:
+    frame_generated = []
+    n_clusters = len(profiles_per_cluster)
+    for cluster_i in range(n_clusters):
+        FD_0, _, _, _ = fractal_dimension(profiles_per_cluster[cluster_i][model_type_]["y_"], N_MAX=6)
+        CSI_day_0 = profiles_per_cluster[cluster_i][model_type_]["CSI_day"]
+        cluster_0 = (np.ones(len(CSI_day_0)) * cluster_i).astype(int)
+
+        generated_frame = pd.concat([pd.DataFrame(FD_0, columns=["FD"]),
+                                     pd.DataFrame(CSI_day_0, columns=["CSI_day"]),
+                                     pd.DataFrame(cluster_0, columns=["cluster"])],
+                                     axis=1)
+        frame_generated.append(generated_frame)
+    frame_generated_model = pd.concat(frame_generated, axis=0, ignore_index=True)
+    frame_generated_by_model[model_type_] = frame_generated_model
+
+fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+plt.subplots_adjust(bottom=0.15, left=0.1, right=0.95, wspace=0.3)
+sns.scatterplot(data=csi_fd_clustered, x="CSI_day", y="FD", hue="cluster", ax=ax[0], palette="coolwarm")
+sns.scatterplot(data=csi_fd_clustered_copula, x="CSI_day", y="FD", hue="cluster", ax=ax[1], palette="coolwarm")
+sns.scatterplot(data=frame_generated_by_model["MVT"], x="CSI_day", y="FD", hue="cluster", ax=ax[2], palette="coolwarm")
+sns.scatterplot(data=frame_generated_by_model["MVG"], x="CSI_day", y="FD", hue="cluster", ax=ax[3], palette="coolwarm")
+ax[0].set_title("Fractal Dimension clustering")
+ax[1].set_title("Time series clustering")
+ax[2].set_title("Generated profiles MVT")
+ax[3].set_title("Generated profiles MVG")
+
+ax_flat = ax.flatten()
+for ax_ in ax_flat:
+    ax_.set_xlim([0, 1.14])
+    ax_.set_ylim([0.95, 2.01])
+# label_frame = csi_fd_clustered[["cluster"]]  # To plot the big figure with the clusters
+
+# #%% Distance metrics to merge the clusters
+# wasserstein_distance_d(profiles_per_cluster[3]["Original"]["y_prime"],
+#                        profiles_per_cluster[5]["Original"]["y_prime"], factor=1000)
 #
-# # Hard Rules
-# csi_fd_clustered = csi_fd.copy()
-# csi_fd_clustered["cluster"] = 0
+# n_clusters = len(profiles_per_cluster)
+# # dist_matrix_emd = np.zeros((n_clusters, n_clusters))
+# dist_matrix_emd = np.diag([np.inf] * n_clusters)
+# dist_matrix_emd = np.ones((n_clusters, n_clusters)) * np.inf
 #
-# idx_clear_sky = (csi_fd["CSI_day"] >= 0.6) & ((1 < csi_fd["FD"]) & (csi_fd["FD"]<=1.4))
-# idx_partialy_cloudy = (csi_fd["CSI_day"] >= 0.6) & ((1.4 < csi_fd["FD"]) & (csi_fd["FD"]<=2.0))
-# # idx_cloudy = (1.25 < csi_fd["FD"]) | ((csi_fd["FD"] <= 1.25) & (csi_fd["CSI_day"]<=0.5))
-# idx_cloudy = csi_fd["CSI_day"]<=0.6
+# for ii in range(0, n_clusters):
+#     for jj in range(ii + 1, n_clusters):
+#         dist_matrix_emd[ii, jj] = wasserstein_distance_d(profiles_per_cluster[ii]["Original"]["y_prime"],
+#                                                          profiles_per_cluster[jj]["Original"]["y_prime"], factor=1000)
+#         # dist_matrix_emd[jj, ii] = dist_matrix_emd[ii, jj]
 #
-# csi_fd_clustered.loc[idx_clear_sky, ["cluster"]] = 0
-# csi_fd_clustered.loc[idx_partialy_cloudy, ["cluster"]] = 2
-# csi_fd_clustered.loc[idx_cloudy, ["cluster"]] = 1
+# print(dist_matrix_emd.round(3))
 #
-# csi_fd_clustered_copula = csi_fd_clustered.copy()
-#
-# #%%
-# np.random.seed(5)
-# samples_per_cluster_v2 = sample_models_per_cluster(models_per_cluster)
-# profiles_per_cluster = process_profiles_from_samples(samples_per_cluster_v2, day_mapping, label_frame)
-#
-# N_CLUSTERS_v2 = 3
-# ALGORITHM_v2 = "KMeans"
-# label_frame_v2 = pd.DataFrame(ap_cluster_solutions.loc[ALGORITHM_v2, N_CLUSTERS_v2], columns=["cluster"],
-#                               index=clear_index_day_frame.index)
-#
-# csi_fd_clustered_copula["cluster"] = label_frame_v2["cluster"].values
-#
-# # Generated profiles by MVG and MVT models
-# frame_generated_by_model = {}
-# for model_type_ in ["MVT", "MVG"]:
-#     frame_generated = []
-#     n_clusters = len(profiles_per_cluster)
-#     for cluster_i in range(n_clusters):
-#         FD_0, _, _, _ = fractal_dimension(profiles_per_cluster[cluster_i][model_type_]["y_"], N_MAX=6)
-#         CSI_day_0 = profiles_per_cluster[cluster_i][model_type_]["CSI_day"]
-#         cluster_0 = (np.ones(len(CSI_day_0)) * cluster_i).astype(int)
-#
-#         generated_frame = pd.concat([pd.DataFrame(FD_0, columns=["FD"]),
-#                                      pd.DataFrame(CSI_day_0, columns=["CSI_day"]),
-#                                      pd.DataFrame(cluster_0, columns=["cluster"])],
-#                                      axis=1)
-#         frame_generated.append(generated_frame)
-#     frame_generated_model = pd.concat(frame_generated, axis=0, ignore_index=True)
-#     frame_generated_by_model[model_type_] = frame_generated_model
-#
-# fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-# plt.subplots_adjust(bottom=0.15, left=0.1, right=0.95, wspace=0.3)
-# sns.scatterplot(data=csi_fd_clustered, x="CSI_day", y="FD", hue="cluster", ax=ax[0], palette="coolwarm")
-# sns.scatterplot(data=csi_fd_clustered_copula, x="CSI_day", y="FD", hue="cluster", ax=ax[1], palette="coolwarm")
-# sns.scatterplot(data=frame_generated_by_model["MVT"], x="CSI_day", y="FD", hue="cluster", ax=ax[2], palette="coolwarm")
-# sns.scatterplot(data=frame_generated_by_model["MVG"], x="CSI_day", y="FD", hue="cluster", ax=ax[3], palette="coolwarm")
-# ax[0].set_title("Fractal Dimension clustering")
-# ax[1].set_title("Time series clustering")
-# ax[2].set_title("Generated profiles MVT")
-# ax[3].set_title("Generated profiles MVG")
-#
-# ax_flat = ax.flatten()
-# for ax_ in ax_flat:
-#     ax_.set_xlim([0, 1.14])
-#     ax_.set_ylim([0.95, 2.01])
-# # label_frame = csi_fd_clustered[["cluster"]]  # To plot the big figure with the clusters
-#
-# # #%% Distance metrics to merge the clusters
-# # wasserstein_distance_d(profiles_per_cluster[3]["Original"]["y_prime"],
-# #                        profiles_per_cluster[5]["Original"]["y_prime"], factor=1000)
-# #
-# # n_clusters = len(profiles_per_cluster)
-# # # dist_matrix_emd = np.zeros((n_clusters, n_clusters))
-# # dist_matrix_emd = np.diag([np.inf] * n_clusters)
-# # dist_matrix_emd = np.ones((n_clusters, n_clusters)) * np.inf
-# #
-# # for ii in range(0, n_clusters):
-# #     for jj in range(ii + 1, n_clusters):
-# #         dist_matrix_emd[ii, jj] = wasserstein_distance_d(profiles_per_cluster[ii]["Original"]["y_prime"],
-# #                                                          profiles_per_cluster[jj]["Original"]["y_prime"], factor=1000)
-# #         # dist_matrix_emd[jj, ii] = dist_matrix_emd[ii, jj]
-# #
-# # print(dist_matrix_emd.round(3))
-# #
-# # sorted_distances = np.sort(dist_matrix_emd.flatten())
-# # np.argwhere(dist_matrix_emd == sorted_distances[0])
-#
-# #%% Now that I have the models, I want to create the profiles
-# START_DATE = "2021-03-01 00:00:00"
-# END_DATE = "2021-09-30 23:50:00"
-# RESAMPLE = "10T"
-#
-# data_aligned_fig = pd.concat([knmi_10min_w_m2[["qg"]], cs_haurwitz, cs_simplified_solis[["ghi_solis"]], cs_ineichen[["ghi_ineichen"]]], axis=1)
-# data_aligned_fig.resample(RESAMPLE).mean()[START_DATE:END_DATE].plot()
-# data_aligned_sliced_fig = data_aligned_fig.resample(RESAMPLE).mean()[START_DATE:END_DATE].copy()
-# day_mapping_fig = day_processing_mapper(data_aligned_sliced_fig, IRR_THRESHOLD=20)
-# day_mapping_frame_fig = pd.DataFrame.from_dict(day_mapping_fig).transpose()
-# clear_index_day_frame_fig = day_mapping_frame_fig[["CSI_day"]]
-#
-# np.random.seed(1234)
-# mvt_models = []
-# pi_mixture = []
-# for cluster_ in range(n_clusters):
-#     mvt_models.append(models_per_cluster[cluster_]["models"]["MVT"])
-#     pi_mixture.append(models_per_cluster[cluster_]["n_profiles_original"])
-#
-# pi_mixture_original = np.array(pi_mixture) / np.array(pi_mixture).sum()
-# pi_mixture_dark = np.array([0.0, 1.0, 0.0])  # Dark days
-# pi_mixture_sunny = np.array([0.0, 0.0, 1.0])  # Sunny days
-#
-# irr_measured = pivot_dataframe(data_aligned_sliced_fig[["qg"]])  # It has nan values
-# irr_measured_original = pd.concat([irr_measured, clear_index_day_frame_fig["CSI_day"]], axis=1)
-#
-# pi_mixtures = [pi_mixture_original, pi_mixture_sunny, pi_mixture_dark]
-# profiles_sampled = [data_aligned_sliced_fig]  # Original time series
-# pivoted_series_sampled = [irr_measured_original]  # Original time series pivoted
-#
-# for pi_mixture_ in tqdm(pi_mixtures):
-#     profile_series, pivoted_series = generate_profiles(pi_mixture_, mvt_models, day_mapping_fig, data_aligned_sliced_fig, START_DATE, END_DATE)
-#     profile_series_concat = pd.concat([profile_series, data_aligned_sliced_fig[["ghi_haurwitz", "qg"]]], axis=1)
-#
-#     profiles_sampled.append(profile_series_concat)
-#     pivoted_series_sampled.append(pivoted_series)
-#
-# n_steps = pivoted_series.shape[1]-1
-# x_axis = pd.date_range(start="2021-11-01", periods=n_steps, freq=RESAMPLE)
-#
-# #%%
-# # fig = plt.figure(figsize=(7.1, 3))
-# fig = plt.figure(figsize=(14.2, 6))
-# gs = gridspec.GridSpec(4, 4, wspace=0.35, hspace=0.35, left=0.08, bottom=0.07, right=0.95, top=0.95, width_ratios=[2, 2, 1, 1.5], height_ratios=[1, 1, 1, 1])
-# ax = np.empty((4, 4), dtype=object)
-#
-# kk = 0
-# for ii in range(4):
-#     for jj in range(4):
-#         ax[ii, jj] = fig.add_subplot(gs[kk])
-#         kk += 1
-#
-# titles_list = [["(a)", "(b)", "(c)", "(d)"],
-#                ["(e)", "(f)", "(g)", "(h)"],
-#                ["(i)", "(j)", "(k)", "(l)"],
-#                ["(m)", "(n)", "(o)", "(p)"]]
-#
-# y_labels_list = ["Original profiles\n$\pi=(0.44, 0.26, 0.3)$\nW/m${}^2$",
-#                  "Synthetic profiles\n$\pi=(0.44, 0.26, 0.3)$\nW/m${}^2$",
-#                  "Synthetic profiles\n$\pi=(0.0, 0.0, 1.0)$\nW/m${}^2$",
-#                  "Synthetic profiles\n$\pi=(0.0, 1.0, 0.0)$\nW/m${}^2$"]
-#
-# for ii in range(4):
-#     if ii == 0:
-#         column_label = "qg"
-#     else:
-#         column_label = "qg_hat"
-#
-#     # locator = mdates.AutoDateLocator()
-#     locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
-#     formatter = mdates.ConciseDateFormatter(locator)
-#     formatter.formats = ['%y',  # ticks are mostly years
-#                          '%b',  # ticks are mostly months
-#                          '%d',  # ticks are mostly days
-#                          '%H:%M',  # hrs
-#                          '%H:%M',  # min
-#                          '%S.%f', ]  # secs
-#     formatter.offset_formats = [''] * 6
-#
-#     ax[ii, 0].plot(profiles_sampled[ii][[column_label,"ghi_haurwitz"]]["2021-06-01":"2021-06-15"].resample("30T").mean(), label=["1", "2"])
-#     ax[ii, 0].set_ylim((-10, 1100))
-#     ax[ii, 0].set_ylabel(y_labels_list[ii], fontsize="large")
-#     ax[ii, 0].set_title(titles_list[ii][0])
-#     ax[ii, 0].xaxis.set_major_locator(locator)
-#     ax[ii, 0].xaxis.set_major_formatter(formatter)
-#
-#     locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
-#     formatter = mdates.ConciseDateFormatter(locator)
-#     formatter.formats = ['%y',  # ticks are mostly years
-#                          '%b',  # ticks are mostly months
-#                          '%d',  # ticks are mostly days
-#                          '%H:%M',  # hrs
-#                          '%H:%M',  # min
-#                          '%S.%f', ]  # secs
-#     formatter.offset_formats = [''] * 6
-#
-#     ax[ii, 1].plot(profiles_sampled[ii][[column_label, "ghi_haurwitz"]]["2021-03-01":"2021-03-15"].resample("30T").mean(), label=["$\hat{q}_t$", "GHI Model"])
-#     ax[ii, 1].set_ylim((-10, 1100))
-#     ax[ii, 1].set_ylabel("W/m${}^2$")
-#     ax[ii, 1].set_title(titles_list[ii][1])
-#     ax[ii, 1].xaxis.set_major_locator(locator)
-#     ax[ii, 1].xaxis.set_major_formatter(formatter)
-#
-#     norm_individual = mpl.colors.Normalize(vmin=0, vmax=1)
-#     for _,(_, data_plot_) in enumerate(pivoted_series_sampled[ii].iterrows()):
-#         ci_daily_ = data_plot_["CSI_day"]
-#         ax[ii, 2].plot(x_axis, data_plot_.drop(["CSI_day"]).ravel(), linewidth=0.2, marker='.', markersize=1,
-#                      markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)),
-#                      color=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)))
-#     # ax[0,1].set_title("Synthetic load profiles")
-#     ax[ii, 2].xaxis.set_major_formatter(mdates.DateFormatter('%H'))
-#     ax[ii, 2].set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)))
-#     ax[ii, 2].set_ylabel("W/m${}^2$")
-#     ax[ii, 2].set_ylim((-10, 1100))
-#     ax[ii, 2].set_title(titles_list[ii][2])
-#     cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('plasma')), ax=ax[ii,2])
-#     cbar_2.ax.set_ylabel('Daily clear index [$K_d$]')
-#
-#     data_time_series = pivoted_series_sampled[ii].drop(columns=["CSI_day"])
-#
-#     x_lims = mdates.date2num([pd.to_datetime(2021 * 1000 + data_time_series.index[0], format='%Y%j'),
-#                               pd.to_datetime(2021 * 1000 + data_time_series.index[-1], format='%Y%j')])
-#     y_lims = mdates.date2num([x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)])
-#
-#     Z = data_time_series.values
-#     z_min, z_max = 0, 1000
-#     b = ax[ii, 3].imshow(Z.T,  cmap=plt.cm.get_cmap('plasma'), vmin=z_min, vmax=z_max, aspect='auto',
-#                          extent=[x_lims[0], x_lims[1],  y_lims[0], y_lims[1]])
-#     cbar_1 = plt.colorbar(b, ax=ax[ii, 3])
-#     cbar_1.ax.set_ylabel('Global Irradiance\nW/m${}^2$')
-#     ax[ii, 3].set_title(titles_list[ii][3])
-#     ax[ii, 3].set_ylabel("Time of day")
-#     ax[ii, 3].xaxis_date()
-#     ax[ii, 3].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
-#     ax[ii, 3].yaxis_date()
-#     ax[ii, 3].yaxis.set_major_formatter(mdates.DateFormatter('%H'))
-#
-#     if ii == 3:
-#         ax[ii, 1].legend(loc="upper right", labelspacing=0.3)
-#         ax[ii, 2].set_xlabel("Time of day")
-#         ax[ii, 3].set_xlabel("Month of year")
-#
-# plt.savefig('figures/solar_model_proposal/generative_profiles.png', dpi=700, bbox_inches='tight')
-#
-# #%% Surface plotPlot original data with the clear index
-# irr_solar_model = pivot_dataframe(data_aligned_sliced[["ghi_haurwitz"]])
-# irr_measured = pivot_dataframe(data_aligned_sliced[["qg"]])
-# data_time_series = pivoted_series.drop(columns=["CSI_day"])
-# data_time_series_slice = data_time_series.iloc[:]
-# x_lims = mdates.date2num([pd.to_datetime(2021 * 1000 + data_time_series_slice.index[0], format='%Y%j'),
-#                           pd.to_datetime(2021 * 1000 + data_time_series_slice.index[-1], format='%Y%j')])
-# y_lims = mdates.date2num([x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)])
-# Z = data_time_series_slice.values
-# z_min, z_max = 0, 1000
-# fig, ax = plt.subplots(1,1, figsize=(10, 10))
-# ax.imshow(Z.T,  cmap=plt.cm.get_cmap('plasma'), vmin=z_min, vmax=z_max, aspect="auto",
-#           extent = [x_lims[0], x_lims[1],  y_lims[0], y_lims[1]])
-# ax.xaxis_date()
-# ax.xaxis.set_major_formatter(mdates.DateFormatter('%b') )
-# ax.yaxis_date()
-# ax.yaxis.set_major_formatter(mdates.DateFormatter('%H') )
-#
+# sorted_distances = np.sort(dist_matrix_emd.flatten())
+# np.argwhere(dist_matrix_emd == sorted_distances[0])
+
+#%% Now that I have the models, I want to create the profiles
+START_DATE = "2021-03-01 00:00:00"
+END_DATE = "2021-09-30 23:50:00"
+RESAMPLE = "10T"
+
+data_aligned_fig = pd.concat([knmi_10min_w_m2[["qg"]], cs_haurwitz, cs_simplified_solis[["ghi_solis"]], cs_ineichen[["ghi_ineichen"]]], axis=1)
+data_aligned_fig.resample(RESAMPLE).mean()[START_DATE:END_DATE].plot()
+data_aligned_sliced_fig = data_aligned_fig.resample(RESAMPLE).mean()[START_DATE:END_DATE].copy()
+day_mapping_fig = day_processing_mapper(data_aligned_sliced_fig, IRR_THRESHOLD=20)
+day_mapping_frame_fig = pd.DataFrame.from_dict(day_mapping_fig).transpose()
+clear_index_day_frame_fig = day_mapping_frame_fig[["CSI_day"]]
+
+np.random.seed(1234)
+mvt_models = []
+pi_mixture = []
+for cluster_ in range(n_clusters):
+    mvt_models.append(models_per_cluster[cluster_]["models"]["MVT"])
+    pi_mixture.append(models_per_cluster[cluster_]["n_profiles_original"])
+
+pi_mixture_original = np.array(pi_mixture) / np.array(pi_mixture).sum()
+pi_mixture_dark = np.array([0.0, 1.0, 0.0])  # Dark days
+pi_mixture_sunny = np.array([0.0, 0.0, 1.0])  # Sunny days
+
+irr_measured = pivot_dataframe(data_aligned_sliced_fig[["qg"]])  # It has nan values
+irr_measured_original = pd.concat([irr_measured, clear_index_day_frame_fig["CSI_day"]], axis=1)
+
+pi_mixtures = [pi_mixture_original, pi_mixture_sunny, pi_mixture_dark]
+profiles_sampled = [data_aligned_sliced_fig]  # Original time series
+pivoted_series_sampled = [irr_measured_original]  # Original time series pivoted
+
+for pi_mixture_ in tqdm(pi_mixtures):
+    profile_series, pivoted_series = generate_profiles(pi_mixture_, mvt_models, day_mapping_fig, data_aligned_sliced_fig, START_DATE, END_DATE)
+    profile_series_concat = pd.concat([profile_series, data_aligned_sliced_fig[["ghi_haurwitz", "qg"]]], axis=1)
+
+    profiles_sampled.append(profile_series_concat)
+    pivoted_series_sampled.append(pivoted_series)
+
+n_steps = pivoted_series.shape[1]-1
+x_axis = pd.date_range(start="2021-11-01", periods=n_steps, freq=RESAMPLE)
+
+#%%
+# fig = plt.figure(figsize=(7.1, 3))
+fig = plt.figure(figsize=(14.2, 6))
+gs = gridspec.GridSpec(4, 4, wspace=0.35, hspace=0.35, left=0.08, bottom=0.07, right=0.95, top=0.95, width_ratios=[2, 2, 1, 1.5], height_ratios=[1, 1, 1, 1])
+ax = np.empty((4, 4), dtype=object)
+
+kk = 0
+for ii in range(4):
+    for jj in range(4):
+        ax[ii, jj] = fig.add_subplot(gs[kk])
+        kk += 1
+
+titles_list = [["(a)", "(b)", "(c)", "(d)"],
+               ["(e)", "(f)", "(g)", "(h)"],
+               ["(i)", "(j)", "(k)", "(l)"],
+               ["(m)", "(n)", "(o)", "(p)"]]
+
+y_labels_list = ["Original profiles\n$\pi=(0.44, 0.26, 0.3)$\nW/m${}^2$",
+                 "Synthetic profiles\n$\pi=(0.44, 0.26, 0.3)$\nW/m${}^2$",
+                 "Synthetic profiles\n$\pi=(0.0, 0.0, 1.0)$\nW/m${}^2$",
+                 "Synthetic profiles\n$\pi=(0.0, 1.0, 0.0)$\nW/m${}^2$"]
+
+for ii in range(4):
+    if ii == 0:
+        column_label = "qg"
+    else:
+        column_label = "qg_hat"
+
+    # locator = mdates.AutoDateLocator()
+    locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
+    formatter = mdates.ConciseDateFormatter(locator)
+    formatter.formats = ['%y',  # ticks are mostly years
+                         '%b',  # ticks are mostly months
+                         '%d',  # ticks are mostly days
+                         '%H:%M',  # hrs
+                         '%H:%M',  # min
+                         '%S.%f', ]  # secs
+    formatter.offset_formats = [''] * 6
+
+    ax[ii, 0].plot(profiles_sampled[ii][[column_label,"ghi_haurwitz"]]["2021-06-01":"2021-06-15"].resample("30T").mean(), label=["1", "2"])
+    ax[ii, 0].set_ylim((-10, 1100))
+    ax[ii, 0].set_ylabel(y_labels_list[ii], fontsize="large")
+    ax[ii, 0].set_title(titles_list[ii][0])
+    ax[ii, 0].xaxis.set_major_locator(locator)
+    ax[ii, 0].xaxis.set_major_formatter(formatter)
+
+    locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
+    formatter = mdates.ConciseDateFormatter(locator)
+    formatter.formats = ['%y',  # ticks are mostly years
+                         '%b',  # ticks are mostly months
+                         '%d',  # ticks are mostly days
+                         '%H:%M',  # hrs
+                         '%H:%M',  # min
+                         '%S.%f', ]  # secs
+    formatter.offset_formats = [''] * 6
+
+    ax[ii, 1].plot(profiles_sampled[ii][[column_label, "ghi_haurwitz"]]["2021-03-01":"2021-03-15"].resample("30T").mean(), label=["$\hat{q}_t$", "GHI Model"])
+    ax[ii, 1].set_ylim((-10, 1100))
+    ax[ii, 1].set_ylabel("W/m${}^2$")
+    ax[ii, 1].set_title(titles_list[ii][1])
+    ax[ii, 1].xaxis.set_major_locator(locator)
+    ax[ii, 1].xaxis.set_major_formatter(formatter)
+
+    norm_individual = mpl.colors.Normalize(vmin=0, vmax=1)
+    for _,(_, data_plot_) in enumerate(pivoted_series_sampled[ii].iterrows()):
+        ci_daily_ = data_plot_["CSI_day"]
+        ax[ii, 2].plot(x_axis, data_plot_.drop(["CSI_day"]).ravel(), linewidth=0.2, marker='.', markersize=1,
+                     markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)),
+                     color=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)))
+    # ax[0,1].set_title("Synthetic load profiles")
+    ax[ii, 2].xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    ax[ii, 2].set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)))
+    ax[ii, 2].set_ylabel("W/m${}^2$")
+    ax[ii, 2].set_ylim((-10, 1100))
+    ax[ii, 2].set_title(titles_list[ii][2])
+    cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('plasma')), ax=ax[ii,2])
+    cbar_2.ax.set_ylabel('Daily clear index [$K_d$]')
+
+    data_time_series = pivoted_series_sampled[ii].drop(columns=["CSI_day"])
+
+    x_lims = mdates.date2num([pd.to_datetime(2021 * 1000 + data_time_series.index[0], format='%Y%j'),
+                              pd.to_datetime(2021 * 1000 + data_time_series.index[-1], format='%Y%j')])
+    y_lims = mdates.date2num([x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)])
+
+    Z = data_time_series.values
+    z_min, z_max = 0, 1000
+    b = ax[ii, 3].imshow(Z.T,  cmap=plt.cm.get_cmap('plasma'), vmin=z_min, vmax=z_max, aspect='auto',
+                         extent=[x_lims[0], x_lims[1],  y_lims[0], y_lims[1]])
+    cbar_1 = plt.colorbar(b, ax=ax[ii, 3])
+    cbar_1.ax.set_ylabel('Global Irradiance\nW/m${}^2$')
+    ax[ii, 3].set_title(titles_list[ii][3])
+    ax[ii, 3].set_ylabel("Time of day")
+    ax[ii, 3].xaxis_date()
+    ax[ii, 3].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+    ax[ii, 3].yaxis_date()
+    ax[ii, 3].yaxis.set_major_formatter(mdates.DateFormatter('%H'))
+
+    if ii == 3:
+        ax[ii, 1].legend(loc="upper right", labelspacing=0.3)
+        ax[ii, 2].set_xlabel("Time of day")
+        ax[ii, 3].set_xlabel("Month of year")
+
+plt.savefig('figures/solar_model_proposal/generative_profiles.png', dpi=700, bbox_inches='tight')
+
+#%% Surface plotPlot original data with the clear index
+irr_solar_model = pivot_dataframe(data_aligned_sliced[["ghi_haurwitz"]])
+irr_measured = pivot_dataframe(data_aligned_sliced[["qg"]])
+data_time_series = pivoted_series.drop(columns=["CSI_day"])
+data_time_series_slice = data_time_series.iloc[:]
+x_lims = mdates.date2num([pd.to_datetime(2021 * 1000 + data_time_series_slice.index[0], format='%Y%j'),
+                          pd.to_datetime(2021 * 1000 + data_time_series_slice.index[-1], format='%Y%j')])
+y_lims = mdates.date2num([x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)])
+Z = data_time_series_slice.values
+z_min, z_max = 0, 1000
+fig, ax = plt.subplots(1,1, figsize=(10, 10))
+ax.imshow(Z.T,  cmap=plt.cm.get_cmap('plasma'), vmin=z_min, vmax=z_max, aspect="auto",
+          extent = [x_lims[0], x_lims[1],  y_lims[0], y_lims[1]])
+ax.xaxis_date()
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%b') )
+ax.yaxis_date()
+ax.yaxis.set_major_formatter(mdates.DateFormatter('%H') )
+
