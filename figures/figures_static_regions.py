@@ -398,7 +398,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                                                        ax=ax,
                                                                        pv_growth_percentiles=x,
                                                                        load_growth_percentiles=y,
-                                                                       linecolor_contour="grey",
+                                                                       linecolor_contour="b",
                                                                        linecolor_quantile="b",
                                                                        alpha_line_quantile=0.0)
 

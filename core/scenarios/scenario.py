@@ -39,7 +39,7 @@ class ScenarioGenerator:
         self.mixture_combinations = None
         self.n_cases = None
 
-        self.n_clusters = len(self.copula_load.keys())
+        self.n_clusters = len(self.copula_load.keys())  #TODO: This should be the number of copula irradiance models not load!!
         self.cluster_labels = list(range(len(self.copula_load.keys())))
 
         self.percentages_load_growth = np.linspace(0, 1.0, self.n_levels_load_growth + 1).round(2)
@@ -66,7 +66,7 @@ class ScenarioGenerator:
 
         percentages_mixtures = np.linspace(0, 1.0, self.n_levels_mixtures + 1).round(1)
         mixture_combinations = [mixture for mixture in product(percentages_mixtures,
-                                                               repeat=self.n_clusters) if sum(mixture) == 1]
+                                                               repeat=self.n_clusters) if np.isclose(1.0, sum(mixture))]
 
         self.mixture_combinations = mixture_combinations
         cases = list(product(mixture_combinations, self.percentages_load_growth, self.percentages_pv_growth))

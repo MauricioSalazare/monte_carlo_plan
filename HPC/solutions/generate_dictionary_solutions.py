@@ -164,24 +164,32 @@ if __name__ == "__main__":
     scenario_generator = load_scenarios_model(file_name_scenario_generator_model)
     cases_combinations = scenario_generator.cases_combinations
 
-    # -----------------------------
-    # Requested scenarios list:
-    mixture_cases = [(0.0, 0.0, 1.0),
-                     (0.2, 0.0, 0.8),
-                     (0.4, 0.0, 0.6),
-                     (0.6, 0.0, 0.4),
-                     (0.8, 0.0, 0.2),
-                     (0.2, 0.6, 0.2),  # Normal case (Original)
-                     (0.0, 1.0, 0.0)]
-    x = scenario_generator.percentages_pv_growth
-    y = scenario_generator.percentages_load_growth
+    #%% Check some combinations
+    all_mixtures = []
+    for mixture_, load_, pv_ in cases_combinations:
+        print(mixture_)
+        all_mixtures.append(mixture_)
 
-    list_of_tuple_cases = []
-    for  mixture_case in mixture_cases:
-        for i, pv in enumerate(x):
-            for j, load  in enumerate(y):
-                list_of_tuple_cases.append((mixture_case, load, pv))
-    # -----------------------------
+
+
+    # # -----------------------------
+    # # Requested scenarios list:
+    # mixture_cases = [(0.0, 0.0, 1.0),
+    #                  (0.2, 0.0, 0.8),
+    #                  (0.4, 0.0, 0.6),
+    #                  (0.6, 0.0, 0.4),
+    #                  (0.8, 0.0, 0.2),
+    #                  (0.2, 0.6, 0.2),  # Normal case (Original)
+    #                  (0.0, 1.0, 0.0)]
+    # x = scenario_generator.percentages_pv_growth
+    # y = scenario_generator.percentages_load_growth
+    #
+    # list_of_tuple_cases = []
+    # for  mixture_case in mixture_cases:
+    #     for i, pv in enumerate(x):
+    #         for j, load  in enumerate(y):
+    #             list_of_tuple_cases.append((mixture_case, load, pv))
+    # # -----------------------------
 
     # case_number_list = [cases_combinations.index(index_value) for index_value in list_of_tuple_cases]
 

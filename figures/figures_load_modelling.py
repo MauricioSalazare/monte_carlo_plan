@@ -372,4 +372,4 @@ for ii, regex_dict in zip(range(2), filter_dict):
     ax[ii].set_title(title_list[ii], fontsize="large")
     ax[ii].set_xlabel("Time of day", fontsize="large")
 
-plt.savefig('load_model/sampling_conditioned.png', dpi=700, bbox_inches='tight')
+plt.savefig('load_model/sampling_conditioned.pdf', dpi=700, bbox_inches='tight')

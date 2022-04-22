@@ -22,6 +22,14 @@ scenario_generator = ScenarioGenerator(copula_load=copula_load,
                                        n_levels_mixtures=10)
 
 cases = scenario_generator.cases_combinations
+
+all_mixtures = []
+for mixture_, load_, pv_ in cases:
+    print(mixture_)
+    all_mixtures.append(mixture_)
+
+print(set(all_mixtures))
+
 case_dictionary = scenario_generator.create_case_scenarios(case=cases[350],
                                                            n_scenarios=500)
 
