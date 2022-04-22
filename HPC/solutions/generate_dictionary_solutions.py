@@ -15,8 +15,8 @@ QUANTILE_DICT = {
                  "05": {"max_tag": "max_q_05",
                         "min_tag": "min_q_05",
                         "quantile": 0.05},
-                 "10": {"max_tag": "max_q_15",
-                        "min_tag": "min_q_15",
+                 "10": {"max_tag": "max_q_10",
+                        "min_tag": "min_q_10",
                         "quantile": 0.10},
                  "25": {"max_tag": "max_q_25",
                         "min_tag": "min_q_25",
@@ -192,10 +192,11 @@ if __name__ == "__main__":
     # # Process the quantiles of all the data
     # generate_quantile_files(cases_combinations, "05")
 
+    # TODO: If you do it all at once, memory will overflow and stop working
     list_quantiles = [
-                      (cases_combinations, "05"),
+                      # (cases_combinations, "05"),
                       (cases_combinations, "10"),
-                      (cases_combinations, "25")
+                      # (cases_combinations, "25")
                       # (cases_combinations, "50"),
                       # (cases_combinations, "75"),
                       # (cases_combinations, "90"),
