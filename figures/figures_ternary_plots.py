@@ -52,6 +52,7 @@ max_technical_limit = 1.045
 
 # Mixture is (cloudy, sunny, dark)
 
+
 mixture_count = 0
 solutions_ternary = {}
 for solution_key in solutions_dict:
@@ -89,20 +90,20 @@ enthalpy = np.array(list(solutions_ternary.values()))
 min_max_scaler = preprocessing.MinMaxScaler()
 enthalpy_minmax = min_max_scaler.fit_transform(enthalpy.reshape(-1, 1)).flatten()
 
-# # enthalpy = ((enthalpy-1.05)/1.05)*100
-# fig = ff.create_ternary_contour(np.array([Al, Y, Cu]), enthalpy,
-#                                 pole_labels=[r'$\text{Cloudy}$', 'Dark', 'Sunny'],
-#                                 # interp_mode='ilr',
-#                                 interp_mode='cartesian',
-#                                 ncontours=40,
-#                                 colorscale='Electric',
-#                                 # coloring='lines',
-#                                 showscale=True,
-#                                 title=f'Max. voltage ternary weather. Load: {load}, PV: {pv}',
-#                                 showmarkers=True,
-#                                 vmincb=1.015,
-#                                 vmaxcb=1.050)
-# fig.show()
+# enthalpy = ((enthalpy-1.05)/1.05)*100
+fig = ff.create_ternary_contour(np.array([Al, Y, Cu]), enthalpy,
+                                pole_labels=[r'$\text{Cloudy}$', 'Dark', 'Sunny'],
+                                # interp_mode='ilr',
+                                interp_mode='cartesian',
+                                ncontours=40,
+                                colorscale='Electric',
+                                # coloring='lines',
+                                showscale=True,
+                                title=f'Max. voltage ternary weather. Load: {load}, PV: {pv}',
+                                showmarkers=True,
+                                vmincb=1.015,
+                                vmaxcb=1.050)
+fig.show()
 
 mixture_frame = pd.DataFrame(data_, columns=["overcast", "sunny", "dark"])
 max_voltage_frame = pd.DataFrame(enthalpy, columns=["voltage"])
