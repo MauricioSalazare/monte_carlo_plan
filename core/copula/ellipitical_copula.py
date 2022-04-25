@@ -707,7 +707,10 @@ class EllipticalCopula:
 
 
 class MixtureCopulaIrradiance:
+    # TODO: Specify the fucking order of the probability mixtures.... which is the sunny day???????
+
     def __init__(self, copula_models: dict, mixture_prob: pd.DataFrame):
+
         assert len(copula_models.keys()) == len(mixture_prob), \
             "Number of mixture components and models must be the same."
 
@@ -717,6 +720,7 @@ class MixtureCopulaIrradiance:
         #                           index=list(range(n_clusters)))
 
         n_components = len(copula_models.keys())
+        self.n_mixture_components = n_components
 
         if isinstance(mixture_prob, np.ndarray):
             assert len(mixture_prob.shape) == 1

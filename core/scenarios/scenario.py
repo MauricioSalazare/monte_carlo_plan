@@ -63,7 +63,6 @@ class ScenarioGenerator:
 
         """
 
-
         percentages_mixtures = np.linspace(0, 1.0, self.n_levels_mixtures + 1).round(1)
         mixture_combinations = [mixture for mixture in product(percentages_mixtures,
                                                                repeat=self.n_clusters) if np.isclose(1.0, sum(mixture))]

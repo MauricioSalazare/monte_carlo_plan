@@ -143,7 +143,7 @@ def plot_contour_levels_irradiance_days(list_matrices,
                                         alpha_line_quantile=1.0) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     y_case = []
-    for matrix_ in list_matrices:
+    for matrix_ in list_matrices:  # Each matrix has a different irradiance day combination
         try:
             cs = ax.contour(pv_growth_percentiles, load_growth_percentiles, matrix_,
                             colors=linecolor_contour, levels=[contour_level], linewidths=0.4)
@@ -262,12 +262,13 @@ special_load_pv_comb = [(0.5, 0.5),
                         (0.5, 0.4),
                         (0.8, 0.6)]
 
-special_rectangles = [(0.45, 0.45),
+special_rectangles = [(0.45, 0.45),  # (x0, y0) cooridnates of the purple boxes
                       (0.45, 0.35),
                       (0.75, 0.55)]
 
 min_voltage_cbar, max_voltage_cbar = 0.998, 1.095
-max_technical_voltage = 1.05
+max_technical_voltage = 1.045
+min_technical_voltage = 0.96
 
 titles_list = ["(a)", "(b)", "(c)"]
 norm_individual = mpl.colors.Normalize(vmin=min_voltage_cbar, vmax=max_voltage_cbar)
@@ -372,7 +373,7 @@ plt.savefig('static_regions/static_region_border.pdf', dpi=700, bbox_inches='tig
 
 warnings.filterwarnings("error")
 critical_quantile_max = ["75", "90", "95"]
-critical_quantile_min = ["25", "15", "05"]
+critical_quantile_min = ["25", "10", "05"]
 titles_list = ["(a)", "(b)", "(c)"]
 min_quant_span = [0.90, 0.88, 0.86]  # This is calculated zooming into the figure and see the vertical contours
 critical_quantiles = list(set(critical_quantile_min + critical_quantile_max))
@@ -394,7 +395,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                                     load_growth_percentiles=y,
                                                     process_max=False)
     q_05_min, q_50_min, q_95_min = plot_contour_levels_irradiance_days(list_matrices,
-                                                                       contour_level=0.96,
+                                                                       contour_level=min_technical_voltage,
                                                                        ax=ax,
                                                                        pv_growth_percentiles=x,
                                                                        load_growth_percentiles=y,
@@ -411,7 +412,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                                     process_max=True)
 
     q_05_max, q_50_max, q_95_max = plot_contour_levels_irradiance_days(list_matrices,
-                                                                       contour_level=1.05,
+                                                                       contour_level=max_technical_voltage,
                                                                        # linecolor_contour="grey",
                                                                        linecolor_contour="#9E5400",
                                                                        linecolor_quantile="r",
