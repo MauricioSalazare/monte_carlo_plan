@@ -47,7 +47,7 @@ with open(path_file_parent / file_name_solutions_dictionary, "rb") as pickle_fil
     solutions_dict = pickle.load(pickle_file)
 
 load = 0.6
-pv = 0.3
+pv = 0.5
 max_technical_limit = 1.045
 
 # Mixture is (cloudy, sunny, dark)
@@ -92,7 +92,7 @@ enthalpy_minmax = min_max_scaler.fit_transform(enthalpy.reshape(-1, 1)).flatten(
 
 # enthalpy = ((enthalpy-1.05)/1.05)*100
 fig = ff.create_ternary_contour(np.array([Al, Y, Cu]), enthalpy,
-                                pole_labels=[r'$\text{Cloudy}$', 'Dark', 'Sunny'],
+                                pole_labels=['Cloudy', 'Overcast', 'Sunny'],
                                 # interp_mode='ilr',
                                 interp_mode='cartesian',
                                 ncontours=40,
@@ -215,7 +215,8 @@ for mixture_value in mixture_combinations:
 new_rows = pd.concat(new_rows, axis=0, ignore_index=True)
 
 ternary_data_full = pd.concat([ternary_data, new_rows], axis=0, ignore_index=True)
-
+ternary_data_full.to_csv("ternary_plot/ternary_data/full_data.csv", index=False)
+ternary_data.to_csv("ternary_plot/ternary_data/clean_data.csv", index=False)
 # Full grid that will also contain the missing values
 # x1_all = ternary_data_full["sunny"].values
 # x2_all = ternary_data_full["overcast"].values

@@ -1,10 +1,56 @@
-import platform
-import plotly
+# This code was taken and modified from:
+# https://nbviewer.org/github/empet/Ternary-contour-plot/blob/master/Plotly-ternary-contour-plot.ipynb
+
 import plotly.graph_objs as go
 import numpy as np
 from scipy.interpolate import griddata
+import pandas as pd
+import matplotlib as mpl
+from pathlib import Path
+import pickle
 
 #%%
+
+def load_data(load: float,
+              pv: float,
+              quant_value: str,
+              file_path: Path=None,):
+
+    assert (0 <= pv <= 1.0) and (0 <= load <= 1.0), "Load and PV must be between [0,1]"
+
+    if file_path is None:
+        path_file_parent = Path(r"D:\monte_carlo_solutions_AWS_quantiles")
+    else:
+        path_file_parent = file_path
+
+    file_name_solutions_dictionary = f"solutions_dictionary_AWS_quantile_{quant_value}.pkl"
+    with open(path_file_parent / file_name_solutions_dictionary, "rb") as pickle_file:
+        solutions_dict = pickle.load(pickle_file)
+
+    mixture_count = 0
+    solutions_ternary = {}
+    for solution_key in solutions_dict:
+        mixture_, load_, pv_ = solution_key
+        if (load == load_) and (pv == pv_):
+            mixture_count += 1
+            solutions_ternary[mixture_] = solutions_dict[solution_key]["max_q_" + quant_value].max()
+
+    print(f"Total mixture in load-PV combination: {mixture_count}")
+    print(f"Min. voltage: {min(solutions_ternary.values())}")
+    print(f"Max. voltage: {max(solutions_ternary.values())}")
+
+    mixture_values = np.array(list(solutions_ternary.keys()))
+    voltage_values = np.array(list(solutions_ternary.values()))
+
+    mixture_frame = pd.DataFrame(mixture_values, columns=["cloudy", "sunny", "overcast"])
+    max_voltage_frame = pd.DataFrame(voltage_values, columns=["voltage"])
+
+    ternary_data = pd.concat([mixture_frame, max_voltage_frame], axis=1)
+
+    return ternary_data
+
+
+
 def tr_b2c2b():
     # returns the transformation matrix from barycentric to cartesian coordinates and conversely
     tri_verts = np.array([[0.5, np.sqrt(3)/2], [0, 0], [1, 0]])# reference triangle
@@ -24,18 +70,33 @@ def contour_trace(x, y, z, tooltip,
                 colorscale=colorscale,
                 reversescale=reversescale,
                 line=dict(width=linewidth, color=linecolor),
-                colorbar=dict(thickness=20,
-                              ticklen=4,
+                colorbar=dict(
+                              dtick=0.01,  # How often you show the ticks (e.g., every 0.01 volts)
+                              thickness=10,
+                              tickcolor="#FFFFFF",
+                              # nticks=1,
+                              # outlinewidth=0.5,
+                              # bordercolor="#FFFFFF",
+                              ticklen=0.5,
                               title="Voltage",
                               titleside='right',
-                              showticklabels=True,
+                              # showticklabels=False,
                               ),
                 contours=dict(showlabels=True,
                               labelfont=dict(  # label font properties
-                                              size=8,
-                                              color='black',
-                                              )
-                              )
+                                             size=12,
+                                             color='black',
+                                             ),
+                                # range_color = (0.5, 1.5),
+                              start=1.008,  # overrides zmin
+                              end=1.08,   # overrides zmax
+                              size=0.00105  # Controls the resolution of the levels
+                              ),
+                # zmin = 0.5,
+                # zmax = 2.5,
+                line_width=1.0,
+                showscale=True,  # Hide the colorbar
+
                 )
 
 
@@ -97,6 +158,7 @@ def ternary_layout(title='Ternary contour plot', width=550, height=525,
                    plot_bgcolor='rgb(255,255,255)',
                    vertex_text=['a', 'b', 'c'], v_fontsize=14):
     return dict(title=title,
+                title_x=0.5,
                 font=dict(family=fontfamily,
                           size=lfontsize),
                 width=width,
@@ -192,30 +254,30 @@ def styling_traces(xt, yt):
     return side_trace, tick_trace
 
 
-A = np.array([0, .3 ,.25, .34 ,0, .4 ,.65, 0.05,  0,  1, .47, .2, .7])  #pos 10 1, 0, 0
-B = np.array([1, .1, .45, .56, 0, .5, .3,  0.75, .85, 0,  .33, .3, .13])
-C = np.array([0, .6 ,.3,  .1,  1, .1, .05,  .2,  .15, 0,  .2,  .5, .17])
+data_voltage = load_data(load=0.6, pv=0.5, quant_value="90")
 
-z=np.array([1.27036107, 1.27893858, 0.52255697, 1.50035059, 0.84853798,
-       1.27722501, 1.20920733, 0.88965008, 0.59293362, 0.9223051 ,
-       1.57173859, 1.33606612, 1.08977333])
+A = data_voltage["cloudy"].values
+C = data_voltage["sunny"].values
+B = data_voltage["overcast"].values
+z = data_voltage["voltage"].values
 
-pl_ternary=dict(type='scatterternary',
-                a=A,
-                b=B,
-                c=C,
-                mode='markers',
-                marker=dict(size=10, color='red'))
+pl_ternary = dict(type='scatterternary',
+                  a=A,
+                  b=B,
+                  c=C,
+                  mode='markers',
+                  marker=dict(size=10, color='red'))
 
-layout=dict(width=500, height=400,
-            ternary= {'sum':1,
-                      'aaxis':{'title': 'a',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside' },
-                      'baxis':{'title': 'b',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside' },
-                      'caxis':{'title': 'c',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside' }},
-            showlegend= False,
-            paper_bgcolor='#EBF0F8')
+layout = dict(width=500, height=400,
+              ternary={'sum': 1,
+                       'aaxis': {'title': 'a',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'},
+                       'baxis': {'title': 'b',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'},
+                       'caxis': {'title': 'c',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'}},
+              showlegend=False,
+              paper_bgcolor='#EBF0F8')
 
-fw=go.FigureWidget(data=[pl_ternary], layout=layout)
+# fw = go.FigureWidget(data=[pl_ternary], layout=layout)
+# fw.write_html('outliers_highlight.html', auto_open=True)
 
 M, invM =  tr_b2c2b()
 cartes_coord_points = np.einsum('ik, kj -> ij', M, np.stack((A, B, C)))
@@ -228,22 +290,28 @@ gr_x = np.linspace(a,b, N)
 gr_y = np.linspace(c,d, N)
 grid_x, grid_y = np.meshgrid(gr_x, gr_y)
 
-#interpolate data (cartes_coords[:2].T; z)  and evaluate the  interpolatory function at the meshgrid points to get grid_z
+#interpolate data (cartes_coords[:2].T; z) and evaluate the  interpolatory function at the meshgrid points to get grid_z
 grid_z = griddata(cartes_coord_points[:2].T, z, (grid_x, grid_y), method='cubic')
 
+# Go back to barycentric coordinates
 bar_coords = np.einsum('ik, kmn -> imn', invM, np.stack((grid_x, grid_y, np.ones(grid_x.shape))))
 bar_coords[np.where(bar_coords<0)] = None # invalidate the points outside of the reference triangle
-xy1 = np.einsum('ik, kmn -> imn', M, bar_coords) # recompute back the cartesian coordinates of bar_coords with invalid positions
-                                               # and extract indices where x are nan
+xy1 = np.einsum('ik, kmn -> imn', M, bar_coords) # recompute back the cartesian coordinates of bar_coords with invalid
+                                                 # positions and extract indices where x are nan
 
 I = np.where(np.isnan(xy1[0]))
 grid_z[I] = None
 
 # tooltips for  proportions, i.e. a+b+c=1
 
-t_proportions = [[f'a: {round(bar_coords[0][i,j], 2)}<br>b: {round(bar_coords[1][i,j], 2)}'+\
-                  f'<br>c: {round(1-round(bar_coords[0][i,j], 2)-round(bar_coords[1][i,j], 2), 2)}'+\
-                  f'<br>z: {round(grid_z[i,j],2)}'  if ~np.isnan(xy1[0][i,j]) else '' for j in range(N)]
+t_names = {"a": "Cloudy",
+           "b": "Overcast",
+           "c": "Sunny",
+           "z": "Voltage"}
+
+t_proportions = [[f'{t_names["a"]}: {round(bar_coords[0][i,j], 2)}<br>{t_names["b"]}: {round(bar_coords[1][i,j], 2)}'+\
+                  f'<br>{t_names["c"]}: {round(1-round(bar_coords[0][i,j], 2)-round(bar_coords[1][i,j], 2), 2)}'+\
+                  f'<br>{t_names["z"]}: {round(grid_z[i,j],4)}'  if ~np.isnan(xy1[0][i,j]) else '' for j in range(N)]
                                        for i in range(N)]
 
 # tooltips for  percents, i.e. a+b+c=100
@@ -273,19 +341,29 @@ for side in [0, 1, 2]:
     cart_coord_ticks(side, M, xt, yt, posx, posy,  t=0.01)
 
 tooltip = t_proportions
-layout = ternary_layout(width=600, height=525, vertex_text=[r"$\text{alpha}$", "bravo", "charlie"])
+# layout = ternary_layout(width=600, height=525, vertex_text=[r"$\text{Cloudy}$", r"$\text{Dark}$", r"$\text{Sunny}$"])
+layout = ternary_layout(title="Ternary plot", width=600, height=510, vertex_text=["Cloudy", "Overcast", "Sunny"])
 annotations = set_ticklabels(layout['annotations'], posx, posy, proportion=True)
 
-c_trace = contour_trace(gr_x, gr_y, grid_z, tooltip, colorscale=pl_deep, reversescale=False)
+norm_individual = mpl.colors.Normalize(vmin=1.008, vmax=1.08)
+v_safe = norm_individual(1.04)
+v_caution = norm_individual(1.05)
+
+alpha = 0.9
+green_color = f"rgba(127,191,127, {alpha})"
+orange_color = f"rgba(255,192,76, {alpha})"
+red_color = f"rgba(219,76,76, {alpha})"
+colorscale = [(0.00,  green_color),   (v_safe, green_color),
+              (v_safe, orange_color), (v_caution, orange_color),
+              (v_caution, red_color),  (1.00, red_color)]
+
+c_trace = contour_trace(gr_x, gr_y, grid_z, tooltip, colorscale=colorscale, reversescale=False, linecolor="rgb(0,0,0)")
+
 side_trace, tick_trace = styling_traces(xt, yt)
-fw1 = go.FigureWidget(data=[c_trace, tick_trace, side_trace], layout=layout)
-
+fw1 = go.Figure(data=[c_trace, tick_trace, side_trace], layout=layout)
 fw1.layout.annotations = annotations
-fw1.write_html('outliers_highlight.html', auto_open=True)
-# fw1.write_image("ternary.pdf")
-# fw1
 
-#%%
-# import plotly.plotly as py
-# # py.sign_in('empet', 'api_key')
-# py.iplot(fw1, filename='ternary1_cont')
+fw1.update_coloraxes(showscale=False)
+fw1.write_html('outliers_highlight.html', auto_open=True)
+fw1.write_image("ternary.pdf")
+# fw1.write_image("ternary.svg")
