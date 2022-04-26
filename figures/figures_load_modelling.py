@@ -121,22 +121,32 @@ file_name_load_models = "../models/copula_model_load_with_reactive_power.pkl"
 with open(file_name_load_models, "rb") as pickle_file:
     copula_models = pickle.load(pickle_file)
 
-# %% Sampling the copula conditioned with energy consumption. This takes sometime
-np.random.seed(123456)
-samples_copula_cluster = {}
-min_energy = np.inf
-max_energy = -np.inf
-for cluster_ in range(3):
-    copula_cluster = copula_models[cluster_]["copula"]
-    data_copula_original = copula_models[cluster_]["original_data"]
-    samples_copula_cluster[cluster_] = sampling_by_annual_energy(copula_cluster, data_copula_original)
-    (min_energy_cluster, max_energy_cluster) = (data_copula_original["avg_gwh"].min(),
-                                                data_copula_original["avg_gwh"].max())
+# # %% Sampling the copula conditioned with energy consumption. This takes sometime
+# np.random.seed(123456)
+# samples_copula_cluster = {}
+# min_energy = np.inf
+# max_energy = -np.inf
+# for cluster_ in range(3):
+#     copula_cluster = copula_models[cluster_]["copula"]
+#     data_copula_original = copula_models[cluster_]["original_data"]
+#     samples_copula_cluster[cluster_] = sampling_by_annual_energy(copula_cluster, data_copula_original)
+#     (min_energy_cluster, max_energy_cluster) = (data_copula_original["avg_gwh"].min(),
+#                                                 data_copula_original["avg_gwh"].max())
+#
+#     if min_energy_cluster < min_energy:
+#         min_energy = min_energy_cluster
+#     if max_energy_cluster > max_energy:
+#         max_energy = max_energy_cluster
+#
+# file_name_sampling_results = "load_model/sampling_results.pkl"
+# with open(file_name_sampling_results, "wb") as pickle_file:
+#     pickle.dump([min_energy, max_energy, samples_copula_cluster], pickle_file)
 
-    if min_energy_cluster < min_energy:
-        min_energy = min_energy_cluster
-    if max_energy_cluster > max_energy:
-        max_energy = max_energy_cluster
+#%% Load the sampling results (If you want to do it again, uncomment previous section)
+file_name_sampling_results = "load_model/sampling_results.pkl"
+with open(file_name_sampling_results, "rb") as pickle_file:
+    [min_energy, max_energy, samples_copula_cluster] = pickle.load(pickle_file)
+
 
 # %%
 norm_individual = mpl.colors.Normalize(vmin=min_energy, vmax=max_energy)
