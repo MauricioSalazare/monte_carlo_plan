@@ -9,7 +9,37 @@ import multiprocessing as mp
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import warnings
+from typing import List
 
+
+
+def get_solutions_dictionary(path_file_solutions, quantiles: List[str]) -> dict:
+    """
+    Read pickle file with all the processed quantile solution from the HPC simulation
+
+    Returns:
+    -------
+        solution_dict: dict: Nested dictionary with quantiles of the HPC simulation. The structure of the dictionary is:
+
+            solution_dict[((mixture), load, pv)][quantile] -> (1-D) np.ndarray (N,) where N is the nodes in the grid
+
+            The values of the array is the max or min quantile value of all scenarios for each node.
+
+            quantile can be: "max_q_{%}" of "min_q_{%}", where % can be numbers: [50, 75, 90, 95]
+
+
+        quantiles: list: can be numbers: [50, 75, 90, 95]
+    """
+
+    solutions_dict = {}
+
+    for quant_name in quantiles:
+        file_name_solutions_dictionary = f"solutions_dictionary_AWS_quantile_{quant_name}.pkl"
+        with open(path_file_solutions / file_name_solutions_dictionary, "rb") as pickle_file:
+            file_solutions_dict = pickle.load(pickle_file)
+            solutions_dict[quant_name] = file_solutions_dict
+
+    return solutions_dict
 
 def load_scenarios_model(file_name_scenario_generator_model):
     with open(file_name_scenario_generator_model, "rb") as pickle_file:
@@ -27,7 +57,7 @@ file_name_scenario_generator_model = "../../models/scenario_generator_model_new_
 # file_name_solutions = "solutions.pkl"
 scenario_generator = load_scenarios_model(file_name_scenario_generator_model)
 # solutions = load_solutions(file_name_solutions)
-cases_combinations = scenario_generator.cases_combinations
+# cases_combinations = scenario_generator.cases_combinations
 
 # assert len(cases_combinations) == len(solutions), "The labeling could be wrong"
 
@@ -56,6 +86,25 @@ matrix_voltages = np.zeros((len(x), len(y)))
 # mixture_case = (0.6, 0.4, 0.0)
 # mixture_case = (0.4, 0.2, 0.4)
 # mixture_case = (0.0, 1.0, 0.0)
+#%%
+#%%
+critical_quantiles = ["05", "10", "15", "25", "50", "75", "90", "95"]
+path_file_parent = Path(r"D:\monte_carlo_solutions_AWS_quantiles")
+solutions_dictx_new = get_solutions_dictionary(path_file_parent, quantiles=critical_quantiles)
+
+# Re-arrange dictionary, so the code in the first figure can work
+cases_combinations = list(set(solutions_dictx_new["50"].keys()))
+solutions_dict = {}
+for mixture_comb in cases_combinations:
+    solutions_dict[mixture_comb] = {}
+    for quantile_name in critical_quantiles:
+        solutions_dict[mixture_comb][f"max_q_{quantile_name}"] = solutions_dictx_new[quantile_name][mixture_comb][f"max_q_{quantile_name}"]
+        solutions_dict[mixture_comb][f"min_q_{quantile_name}"] = solutions_dictx_new[quantile_name][mixture_comb][f"min_q_{quantile_name}"]
+
+
+
+
+
 #%%
 mixture_cases = [(0.0, 0.0, 1.0),
                  (0.2, 0.0, 0.8),

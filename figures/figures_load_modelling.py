@@ -326,6 +326,7 @@ title_list = ["(a)", "(b)"]
 fig, ax = plt.subplots(1, 2, figsize=(7, 3))
 plt.subplots_adjust(wspace=0.4, bottom=0.2, left=0.1, right=0.95, top=0.9)
 
+quantile_pairs = []
 for ii, regex_dict in zip(range(2), filter_dict):
     for _, (_, data_plot_) in enumerate(samples_copula_cluster_energy.iterrows()):
         annual_energy = data_plot_["avg_gwh"]
@@ -351,6 +352,8 @@ for ii, regex_dict in zip(range(2), filter_dict):
         samples_copula_cluster_energy.iloc[idx_low, :].filter(**regex_dict).values.transpose())
     _, q_50_high, _ = compute_quantiles(
         samples_copula_cluster_energy.iloc[idx_high, :].filter(**regex_dict).values.transpose())
+
+    quantile_pairs.append([q_50_low, q_50_high])
 
     l1 = ax[ii].plot(x_axis, q_50_low, linewidth=1.5, color="blue", linestyle="--", label="Low Energy - Perc. 50\%")
     l2 = ax[ii].plot(x_axis, q_50_high, linewidth=1.5, color="red", linestyle="--", label="High Energy - Perc. 50\%")
@@ -383,3 +386,49 @@ for ii, regex_dict in zip(range(2), filter_dict):
     ax[ii].set_xlabel("Time of day", fontsize="large")
 
 plt.savefig('load_model/sampling_conditioned.pdf', dpi=700, bbox_inches='tight')
+
+#%% Compare the ratio of active and reactive powers for different yearly consumption.
+
+from matplotlib import gridspec
+
+fig = plt.figure(figsize=(7, 3.5))
+gs = gridspec.GridSpec(3, 2, figure=fig, height_ratios=[2,1,1], wspace=0.25)
+ax1 = fig.add_subplot(gs[0,0])
+ax2 = fig.add_subplot(gs[1,0])
+ax3 = fig.add_subplot(gs[0,1])
+ax4 = fig.add_subplot(gs[1,1])
+ax5 = fig.add_subplot(gs[2,:])
+
+ap_high = quantile_pairs[0][1]
+ap_low = quantile_pairs[0][0]
+
+rp_high = quantile_pairs[1][1]
+rp_low = quantile_pairs[1][0]
+
+pf_high = np.array([cos_phi(p, q) for p, q in zip(ap_high, rp_high)])
+pf_low = np.array([cos_phi(p, q) for p, q in zip(ap_low, rp_low)])
+
+ax1.plot(ap_high, label="high consumption", color="r")
+ax1.plot(ap_low, label="low consumption", color="b")
+ax1.set_ylabel("kW")
+ax1.legend(fontsize="x-small")
+
+ax2.plot(ap_high/ap_low)
+ax2.set_ylabel("Ratio kW\n(high/low)")
+ax2.set_ylim((3.5, 6.0))
+
+
+ax3.plot(rp_high, label="high consumption", color="r")
+ax3.plot(rp_low, label="low consumption", color="b")
+ax3.set_ylabel("kVAr")
+ax3.legend(fontsize="x-small")
+
+ax4.set_ylabel("Ratio kVAr\n(high/low)")
+ax4.plot(rp_high/rp_low)
+ax4.set_ylim((3.5, 15.0))
+
+ax5.plot(pf_high, label="pf high")
+ax5.plot(pf_low, label="pf high")
+ax5.set_ylabel("P.F.")
+ax5.set_ylim((0.965, 1.0))
+ax5.legend(fontsize="x-small")

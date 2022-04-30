@@ -87,21 +87,21 @@ def process_file(case_number):
 
     return solution_case
 
-def process_cases(cases_combinations: list, list_requested_cases: list):
-    """ Process only the selected cases from all the possible cases """
-    case_number_list = [cases_combinations.index(index_value) for index_value in list_requested_cases]
-
-    solutions_dict = {}
-    total_cases = len(case_number_list)
-    for ii, (tuple_case, case_index) in enumerate(zip(list_of_tuple_cases, case_number_list)):
-        print(f"iteration: {ii} of {total_cases}")
-        solutions_dict[tuple_case] = process_file(case_index)
-
-    path_file_parent = Path(r"C:\Users\20175334\Documents\PycharmProjects\monte_carlo_plan\HPC\solutions")
-    file_name_solutions_dictionary = "solutions_dictionary_AWS.pkl"
-
-    with open(path_file_parent / file_name_solutions_dictionary, "wb") as pickle_file:
-        pickle.dump(solutions_dict, pickle_file)
+# def process_cases(cases_combinations: list, list_requested_cases: list):
+#     """ Process only the selected cases from all the possible cases """
+#     case_number_list = [cases_combinations.index(index_value) for index_value in list_requested_cases]
+#
+#     solutions_dict = {}
+#     total_cases = len(case_number_list)
+#     for ii, (tuple_case, case_index) in enumerate(zip(list_requested_cases, case_number_list)):
+#         print(f"iteration: {ii} of {total_cases}")
+#         solutions_dict[tuple_case] = process_file(case_index)
+#
+#     path_file_parent = Path(r"C:\Users\20175334\Documents\PycharmProjects\monte_carlo_plan\HPC\solutions")
+#     file_name_solutions_dictionary = "solutions_dictionary_AWS.pkl"
+#
+#     with open(path_file_parent / file_name_solutions_dictionary, "wb") as pickle_file:
+#         pickle.dump(solutions_dict, pickle_file)
 
 
 def max_min_quantiles_individual(voltage_solutions, quantile: str, *, n_scenarios, only_tensor_voltage=False):
@@ -173,6 +173,7 @@ if __name__ == "__main__":
 
 
     # # -----------------------------
+    # TODO: This piece of code in this section is deprecrated all the mixuters are processed for specific quantile
     # # Requested scenarios list:
     # mixture_cases = [(0.0, 0.0, 1.0),
     #                  (0.2, 0.0, 0.8),
@@ -203,9 +204,9 @@ if __name__ == "__main__":
     # TODO: If you do it all at once, memory will overflow and stop working
     list_quantiles = [
                       # (cases_combinations, "05"),
-                      (cases_combinations, "10"),
+                      # (cases_combinations, "10"),
                       # (cases_combinations, "25")
-                      # (cases_combinations, "50"),
+                      (cases_combinations, "50"),
                       # (cases_combinations, "75"),
                       # (cases_combinations, "90"),
                       # (cases_combinations, "95")

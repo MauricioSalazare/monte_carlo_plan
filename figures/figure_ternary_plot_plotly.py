@@ -10,6 +10,10 @@ from pathlib import Path
 import pickle
 
 #%%
+CMIN_VMIN = 1.03
+CMAX_VMAX = 1.061
+LINE_WIDTH_LAYOUT = 0.3
+LINE_WIDTH_CONTOUR = 0.3
 
 def load_data(load: float,
               pv: float,
@@ -50,7 +54,6 @@ def load_data(load: float,
     return ternary_data
 
 
-
 def tr_b2c2b():
     # returns the transformation matrix from barycentric to cartesian coordinates and conversely
     tri_verts = np.array([[0.5, np.sqrt(3)/2], [0, 0], [1, 0]])# reference triangle
@@ -88,13 +91,13 @@ def contour_trace(x, y, z, tooltip,
                                              color='black',
                                              ),
                                 # range_color = (0.5, 1.5),
-                              start=1.008,  # overrides zmin
-                              end=1.08,   # overrides zmax
+                              start=CMIN_VMIN,  # overrides zmin
+                              end=CMAX_VMAX,   # overrides zmax
                               size=0.00105  # Controls the resolution of the levels
                               ),
                 # zmin = 0.5,
                 # zmax = 2.5,
-                line_width=1.0,
+                # line_width=1.0,
                 showscale=True,  # Hide the colorbar
 
                 )
@@ -253,8 +256,10 @@ def styling_traces(xt, yt):
 
     return side_trace, tick_trace
 
+LOAD = 0.5
+PV = 0.5
 
-data_voltage = load_data(load=0.6, pv=0.5, quant_value="90")
+data_voltage = load_data(load=LOAD, pv=PV, quant_value="90")
 
 A = data_voltage["cloudy"].values
 C = data_voltage["sunny"].values
@@ -270,9 +275,9 @@ pl_ternary = dict(type='scatterternary',
 
 layout = dict(width=500, height=400,
               ternary={'sum': 1,
-                       'aaxis': {'title': 'a',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'},
-                       'baxis': {'title': 'b',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'},
-                       'caxis': {'title': 'c',  'min': 0.001, 'linewidth':0.5, 'ticks':'outside'}},
+                       'aaxis': {'title': 'a',  'min': 0.001, 'linewidth': LINE_WIDTH_LAYOUT, 'ticks':'outside'},
+                       'baxis': {'title': 'b',  'min': 0.001, 'linewidth': LINE_WIDTH_LAYOUT, 'ticks':'outside'},
+                       'caxis': {'title': 'c',  'min': 0.001, 'linewidth': LINE_WIDTH_LAYOUT, 'ticks':'outside'}},
               showlegend=False,
               paper_bgcolor='#EBF0F8')
 
@@ -343,10 +348,11 @@ for side in [0, 1, 2]:
 tooltip = t_proportions
 # layout = ternary_layout(width=600, height=525, vertex_text=[r"$\text{Cloudy}$", r"$\text{Dark}$", r"$\text{Sunny}$"])
 layout = ternary_layout(title="Ternary plot", width=600, height=510, vertex_text=["Cloudy", "Overcast", "Sunny"])
+# layout = ternary_layout(title="Ternary plot", width=int(600 * (2/3)), height=int(255 * (2/3)), vertex_text=["Cloudy", "Overcast", "Sunny"])
 annotations = set_ticklabels(layout['annotations'], posx, posy, proportion=True)
 
-norm_individual = mpl.colors.Normalize(vmin=1.008, vmax=1.08)
-v_safe = norm_individual(1.04)
+norm_individual = mpl.colors.Normalize(vmin=CMIN_VMIN, vmax=CMAX_VMAX)
+v_safe = norm_individual(1.045)
 v_caution = norm_individual(1.05)
 
 alpha = 0.9
@@ -357,13 +363,14 @@ colorscale = [(0.00,  green_color),   (v_safe, green_color),
               (v_safe, orange_color), (v_caution, orange_color),
               (v_caution, red_color),  (1.00, red_color)]
 
-c_trace = contour_trace(gr_x, gr_y, grid_z, tooltip, colorscale=colorscale, reversescale=False, linecolor="rgb(0,0,0)")
+c_trace = contour_trace(gr_x, gr_y, grid_z, tooltip, linewidth=LINE_WIDTH_CONTOUR, colorscale=colorscale, reversescale=False, linecolor="rgb(0,0,0)")
 
 side_trace, tick_trace = styling_traces(xt, yt)
 fw1 = go.Figure(data=[c_trace, tick_trace, side_trace], layout=layout)
 fw1.layout.annotations = annotations
 
 fw1.update_coloraxes(showscale=False)
-fw1.write_html('outliers_highlight.html', auto_open=True)
-fw1.write_image("ternary.pdf")
-# fw1.write_image("ternary.svg")
+fw1.write_html('ternary_plot/outliers_highlight.html', auto_open=True)
+fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.pdf")
+fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.svg")
+fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.png", width=300*7, height=300*7, scale=1)

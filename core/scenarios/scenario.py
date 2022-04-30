@@ -76,16 +76,21 @@ class ScenarioGenerator:
 
         return cases
 
-    def create_mapper_load_growth(self):
-        # Discrete load growth to avoid numerical instability
+    def create_mapper_load_growth(self) -> dict:
+        """
+        Computes a dictionary that has a discrete load growth to avoid numerical instability
+        e.g., mapper_cluster_load_growth[LOAD_GROWTH_STEP] -> Annual energy value in GWh/year
+        where LOAD_GROWTH_STEP is a float between [0, 1.0]
+        """
+
         cluster_labels = list(range(len(self.copula_load.keys())))
         mapper_cluster_load_growth = {}
 
         for k_cluster in cluster_labels:
             energy_values = self.copula_load[k_cluster]["original_data"]["avg_gwh"].\
                                                                     value_counts().sort_index().index.to_numpy()
-            lower_bound_energy = np.nanquantile(energy_values, q=0.1)
-            upper_bound_energy = np.nanquantile(energy_values, q=0.9)
+            lower_bound_energy = np.nanquantile(energy_values, q=0.1)  # Min. possible annual energy
+            upper_bound_energy = np.nanquantile(energy_values, q=0.9)  # Max. possible annual energy
 
             lower_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - lower_bound_energy))]
             upper_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - upper_bound_energy))]
@@ -94,6 +99,8 @@ class ScenarioGenerator:
                                         self.n_levels_load_growth + 1)
 
             energy_level_discrete = []
+
+            # Find the closest discrete energy level in the dataset, that corresponds to the lineal energy growth.
             for energy_level in energy_levels:
                 energy_level_discrete.append(energy_values[np.argmin(np.abs(energy_values - energy_level))])
             energy_level_discrete = np.array(energy_level_discrete)
@@ -108,6 +115,22 @@ class ScenarioGenerator:
                                       k_cluster,
                                       n_scenarios,
                                       load_growth):
+        """
+        Sample the copula model of the active power load profile, for one cluster.
+
+        Parameter:
+        =========
+            k_cluster: int: cluster number to select the copula
+            n_scenarios: int: number of profiles that should be sampled from the copula model
+            load_growth: float: Value of annual energy in GWh/year that the copula must be conditioned.
+
+        Returns:
+        =======
+            ap_dict_matrix_cluster: dict: sampled active load profiles organized by node.
+                Key of the dictionary is he node number
+            rp_dict_matrix_cluster: dict: sampled reactive load profiles organized by node.
+                Key of the dictionary is he node number
+        """
 
         # Mapper to get the variable name right from the copula.
         variable_names = self.copula_load[k_cluster]["original_data"].columns.to_list()
@@ -149,6 +172,8 @@ class ScenarioGenerator:
 
         for ii, key_ in enumerate(nodes_cluster):
             ap_dict_matrix_cluster[key_] = ap_sampled_per_node[ii, ...]
+
+            # tan(\phi) = 0.1 -> \phi approx 5.7105° cos(\phi) = 0.995 : Here P * tan(\phi) = Q
             rp_dict_matrix_cluster[key_] = ap_sampled_per_node[ii, ...] * 0.1
 
         return ap_dict_matrix_cluster, rp_dict_matrix_cluster
