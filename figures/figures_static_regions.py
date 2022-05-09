@@ -10,6 +10,9 @@ from pathlib import Path
 from scipy import interpolate
 from core.figure_utils import set_figure_art
 from typing import List, Tuple
+import numpy as np
+from scipy.interpolate import griddata
+import pickle
 set_figure_art()
 mpl.rc('text', usetex=False)
 
@@ -217,6 +220,36 @@ def plot_contour_levels_irradiance_days(list_matrices,
 
     return q_05, q_50, q_95, y_case
 
+def get_high_res_plane(quantile: str,
+                       mixture_irradiance: list,
+                       solutions_dictx: dict,
+                       x:np.ndarray,
+                       y: np.ndarray,
+                       process_max=True):
+
+    list_matrices = get_matrices_critical_quantiles(quantile,
+                                                    all_mixtures_irradiance_only=mixture_irradiance,
+                                                    solutions_dict=solutions_dictx[quantile],
+                                                    pv_growth_percentiles=x,
+                                                    load_growth_percentiles=y,
+                                                    process_max=process_max)
+    data_z = list_matrices[0]
+    X, Y = np.meshgrid(x, y)
+
+    Z_ = data_z.reshape(1, -1).squeeze()
+    X_ = X.reshape(1, -1).squeeze()
+    Y_ = Y.reshape(1, -1).squeeze()
+
+    N = 150
+    gr_x = np.linspace(x.min(), x.max(), N)
+    gr_y = np.linspace(y.min(), y.max(), N)
+    grid_x, grid_y = np.meshgrid(gr_x, gr_y)
+
+    Ti = griddata((X_, Y_), Z_, (X, Y), method="cubic")
+    Ti_high_res = griddata((X_, Y_), Z_, (grid_x, grid_y), method="cubic")
+
+    return Ti, Ti_high_res, (X, Y), (grid_x, grid_y)
+
 
 file_name_scenario_generator_model = "../models/scenario_generator_model_new_AWS.pkl"
 scenario_generator = load_scenarios_model(file_name_scenario_generator_model)
@@ -242,13 +275,13 @@ for mixture_comb in cases_combinations:
 
 
 #%%
-QUANTILE = "90"  # Quantile to plot in the first figure
+QUANTILE = "95"  # Quantile to plot in the first figure
 MIN_QUANTILE_HIGHLIGHT = "05"
 
 # (cloudy, sunny, overcast)
 mixture_cases_plot = [(0.4, 0.0, 0.6),
-                      # (0.2, 0.6, 0.2),  # Normal case (Original)
-                      (0.3, 0.3, 0.4),
+                      (0.2, 0.6, 0.2),  # Normal case (Original)
+                      # (0.3, 0.3, 0.4),
                       (0.0, 1.0, 0.0)]
 
 list_matrices_plot = []
@@ -588,7 +621,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
 
 #%%
 # =====================================================================================================================
-# FIGURE 3: Collect all the lines for the 1.05 and 1.045 limits
+# FIGURE 3: Collect all the lines for the 1.05 and 1.045 limits (One big plot attached to ternary plots)
 # =====================================================================================================================
 
 max_technical_voltage_danger = 1.05
@@ -708,7 +741,59 @@ ax.legend(fontsize="medium",
 plt.savefig('static_regions/static_contour_for_ternary.pdf', dpi=700, bbox_inches='tight')
 
 #%%
+# =====================================================================================================================
+# FIGURE 4: See the planes in 3D to understand better
+# =====================================================================================================================
+
+Ti_1, Ti_high_res_1, (X, Y), (grid_x, grid_y) = get_high_res_plane("90", [(0.4, 0.0, 0.6)], solutions_dictx, x, y)
+Ti_2, Ti_high_res_2, _, _ = get_high_res_plane("90", [(0.0, 1.0, 0.0)], solutions_dictx, x, y)
+Ti_3, Ti_high_res_3, _, _ = get_high_res_plane("90", [(0.3, 0.3, 0.4)], solutions_dictx, x, y)
+
+Ti_1_min, Ti_high_res_1_min, (X_min, Y_min), (grid_x_min, grid_y_min) = get_high_res_plane("10", [(0.4, 0.0, 0.6)],
+                                                                                           solutions_dictx, x, y,
+                                                                                           process_max=False)
+Ti_2_min, Ti_high_res_2_min, _, _ = get_high_res_plane("10", [(0.0, 1.0, 0.0)], solutions_dictx, x, y,
+                                                       process_max=False)
+Ti_3_min, Ti_high_res_3_min, _, _ = get_high_res_plane("10", [(0.3, 0.3, 0.4)], solutions_dictx, x, y,
+                                                       process_max=False)
+
+fig, ax = plt.subplots(nrows=2, ncols=3, subplot_kw={'projection': '3d'}, figsize=(16, 12))
+ax[0, 0].plot_wireframe(X, Y, Ti_1, color='r', linewidth=0.4)
+ax[0, 1].plot_wireframe(grid_x, grid_y, Ti_high_res_1, color='b', linewidth=0.4, label="[(cloudy=0.4, sunny=0.0, overcast=0.6)]")
+ax[0, 1].plot_wireframe(grid_x, grid_y, Ti_high_res_2, color='r', linewidth=0.4, label=" [(0.0, 1.0, 0.0)]")
+ax[0, 1].plot_wireframe(grid_x, grid_y, Ti_high_res_3, color='orange', linewidth=0.4, label="[(0.3, 0.3, 0.4)]")
+ax[0, 1].plot_wireframe(grid_x, grid_y, np.full_like(Ti_high_res_2, 1.05), color='k', linewidth=0.4, label="Max. Technical limit")
+ax[0, 1].set_xlabel("Load growth [/%]")
+ax[0, 1].set_ylabel("PV growth [/%]")
+ax[0, 1].set_zlabel("Max. voltage [p.u]")
+ax[0, 1].set_title("Maximum grid voltage Quantile 90")
+ax[0, 0].set_title("Low resolution (Simulations)")
+ax[0, 2].set_title("Simulation + 3D Cubic Spline")
+ax[0, 1].legend(fontsize="large")
+ax[0, 2].plot_wireframe(X, Y, Ti_1, color='r', linewidth=1.0, label="Simulated")
+ax[0, 2].plot_wireframe(grid_x, grid_y, Ti_high_res_1, color='b', linewidth=0.4, label="Cubic spline")
+ax[0, 2].legend(fontsize="small")
+
+ax[1, 0].plot_wireframe(X, Y, Ti_1, color='r', linewidth=0.4)
+ax[1, 1].plot_wireframe(grid_x_min, grid_y_min, Ti_high_res_1_min, color='b', linewidth=0.4, label="[(cloudy=0.4, sunny=0.0, overcast=0.6)]")
+ax[1, 1].plot_wireframe(grid_x_min, grid_y_min, Ti_high_res_2_min, color='r', linewidth=0.4, label=" [(0.0, 1.0, 0.0)]")
+ax[1, 1].plot_wireframe(grid_x_min, grid_y_min, Ti_high_res_3_min, color='orange', linewidth=0.4, label="[(0.3, 0.3, 0.4)]")
+ax[1, 1].plot_wireframe(grid_x_min, grid_y_min, np.full_like(Ti_high_res_2_min, 0.96), color='k', linewidth=0.4, label="Min. Technical limit")
+ax[1, 1].set_xlabel("Load growth [/%]")
+ax[1, 1].set_ylabel("PV growth [/%]")
+ax[1, 1].set_zlabel("Min. voltage [p.u]")
+ax[1, 1].set_title("Minimum grid voltage Quantile 90")
+ax[1, 0].set_title("Low resolution (Simulations)")
+ax[1, 2].set_title("Simulation + 3D Cubic Spline")
+ax[1, 1].legend(fontsize="large")
+
+ax[1, 2].plot_wireframe(X_min, Y_min, Ti_1_min, color='r', linewidth=1.0, label="Simulated")
+ax[1, 2].plot_wireframe(grid_x_min, grid_y_min, Ti_high_res_1_min, color='b', linewidth=0.4, label="Cubic spline")
+ax[1, 2].legend(fontsize="small")
+
+np.quantile([0.002, 1,1,2,3,3,3,3,4,3.4], q=0)
+
+
 # plt.style.use("seaborn-white")
 # plt.style.use("../../probnum.mplstyle")
-fig, ax = plt.subplots(1,1)
-ax.scatter(np.random.randn(20), np.random.randn(20))
+

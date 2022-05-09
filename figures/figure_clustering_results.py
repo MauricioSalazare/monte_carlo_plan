@@ -63,8 +63,8 @@ markers_cycle = list(islice(cycle(['.', ',', 'o', 'v', '^', '<', '>', '1', '2', 
                             clustering_algorithms))
 
 #%%
-fig, axs = plt.subplots(2, 2, figsize=(5, 5))
-plt.subplots_adjust(left=0.09, right=0.95, bottom=0.20, hspace=0.4, top=0.95, wspace=0.4)
+fig, axs = plt.subplots(2, 2, figsize=(5, 4))
+plt.subplots_adjust(left=0.09, right=0.95, bottom=0.20, hspace=0.5, top=0.95, wspace=0.4)
 score_values_list_to_plot = ["MDI", "DBI", "CHI", "SI"]
 title_subplot = ["(a)", "(b)", "(c)", "(d)"]
 y_lims = [(0.5, 2.5), (0.5, 1.8), (200, 650), (0.12, 0.5)]

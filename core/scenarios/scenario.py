@@ -54,6 +54,8 @@ class ScenarioGenerator:
 
         A case consist of: (mixture components of irradiance, % load growth, % pv_growth)
 
+        mixture components of irradiance = (cloudy, sunny, dark)
+
         Where mixture components is a tuple of "n" number that sum up to 1. Each number correspond to the probability
         for each type of irradiance to sample. e.g., (0.2, 0.7, 0.1)
 

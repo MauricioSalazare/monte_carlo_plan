@@ -10,12 +10,15 @@ class Grid:
                  node_file_path: str,
                  lines_file_path: str,
                  *,
-                 s_base: int = 1000,
-                 v_base: float = 11):
+                 s_base: int = 1000,  # kVA - 1 phase
+                 v_base: float = 11  # kV - 1 phase
+                 ):
         self.node_file_path = node_file_path
         self.lines_file_path = lines_file_path
         self.s_base = s_base
         self.v_base = v_base
+        self.z_base = (self.v_base ** 2 * 1000) / self.s_base
+        self.i_base = self.s_base / (np.sqrt(3) * self.v_base)
 
         self._load_system_data()
         self._make_y_bus()
@@ -135,7 +138,7 @@ class Grid:
         # print(f"Time: {perf_counter() - start} seconds.")
         # print(f"Iterations: {iteration - 1}")
 
-        return self.v_0
+        return self.v_0  # Solution of voltage in complex numbers
 
     def _solve_sam(self) -> np.ndarray:
         A = csr_matrix(np.diag(np.multiply(self.alpha_P, 1. / np.conj(self.v_0) ** 2) * np.conj(self.S_nom)))
@@ -162,3 +165,6 @@ class Grid:
         V = spsolve(M, N)
 
         return np.add(V[0:self.nb - 1], 1j * V[self.nb - 1:])
+
+    def line_currents(self, volt_solutions):
+        raise NotImplementedError

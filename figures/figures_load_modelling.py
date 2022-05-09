@@ -311,8 +311,13 @@ plt.savefig('load_model/sampling_load_models.png', dpi=700, bbox_inches='tight')
 # %% Create samples conditioned by yearly energy consumption.
 np.random.seed(12)
 CLUSTER = 2
+
+annual_energy_values = copula_models[CLUSTER]['original_data']['avg_gwh'].value_counts().sort_index()
+print(f"Possible annual energy values (GWh/year):\n {annual_energy_values.index.to_list()}")
+
 LOW_ANNUAL_ENERGY = 0.429440
 HIGH_ANNUAL_ENERGY = 1.767857
+# HIGH_ANNUAL_ENERGY = 0.94
 annual_energy_to_sample = pd.Series({HIGH_ANNUAL_ENERGY: 100, LOW_ANNUAL_ENERGY: 100},
                                     name="avg_gwh")  # Dict[energy_level: samples]
 samples_copula_cluster_energy = sampling_by_annual_energy(copula_model=copula_models[CLUSTER]["copula"],
@@ -388,7 +393,7 @@ for ii, regex_dict in zip(range(2), filter_dict):
 plt.savefig('load_model/sampling_conditioned.pdf', dpi=700, bbox_inches='tight')
 
 #%% Compare the ratio of active and reactive powers for different yearly consumption.
-
+theorical_scale = HIGH_ANNUAL_ENERGY/LOW_ANNUAL_ENERGY
 from matplotlib import gridspec
 
 fig = plt.figure(figsize=(7, 3.5))
@@ -415,7 +420,9 @@ ax1.legend(fontsize="x-small")
 
 ax2.plot(ap_high/ap_low)
 ax2.set_ylabel("Ratio kW\n(high/low)")
-ax2.set_ylim((3.5, 6.0))
+ax2.hlines(y=theorical_scale, xmin=0, xmax=ax2.get_xlim()[1], color="r", label="Annual Energy ratio")
+# ax2.set_ylim((2.0, 3.5))
+ax2.legend(fontsize="x-small")
 
 
 ax3.plot(rp_high, label="high consumption", color="r")
@@ -425,10 +432,12 @@ ax3.legend(fontsize="x-small")
 
 ax4.set_ylabel("Ratio kVAr\n(high/low)")
 ax4.plot(rp_high/rp_low)
-ax4.set_ylim((3.5, 15.0))
+# ax4.set_ylim((3.5, 15.0))
 
 ax5.plot(pf_high, label="pf high")
 ax5.plot(pf_low, label="pf high")
 ax5.set_ylabel("P.F.")
 ax5.set_ylim((0.965, 1.0))
 ax5.legend(fontsize="x-small")
+
+print(f"Year energy ration: {HIGH_ANNUAL_ENERGY/LOW_ANNUAL_ENERGY:.2f}")
