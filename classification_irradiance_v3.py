@@ -801,13 +801,19 @@ plot_scores(score_values_ap["CDI"],
 ap_cluster_solutions = cluster_ap.get_cluster_labels()
 
 #%% Merge cluster solutions with data
-N_CLUSTERS = 6
-ALGORITHM = "Birch"
+N_CLUSTERS = 3
+ALGORITHM = "KMeans"
 
 # Merge cluster labels results with the data
 clear_index_day_frame = day_mapping_frame[["CSI_day"]].dropna()
 label_frame = pd.DataFrame(ap_cluster_solutions.loc[ALGORITHM, N_CLUSTERS], columns=["cluster"],
                            index=clear_index_day_frame.index)
+
+remap_label = {0: 1,
+               1: 2,
+               2: 0}
+label_frame["cluster"] = label_frame["cluster"].apply(lambda x: remap_label[x])
+
 data_list_raw = [np.array(day_mapping_frame["q_t_all"].dropna().to_list()),  # TODO: Repeated from data list
                  np.array(day_mapping_frame["y_real_prime"].dropna().to_list()),
                  np.array(day_mapping_frame["y_real_prime_scaled"].dropna().to_list()),
@@ -1231,30 +1237,30 @@ for jj, (ax_i, cluster_) in enumerate(zip(ax_, range(N_CLUSTERS))):  # Columns
 
 fig.suptitle("Sampling from the models")
 
-#%% Use birch and 10 min resolution an activate the commented code
-CLEAR_DAY = 20  # Birch 6 clusters
-CLOUDY_DAY = 13
-
-profile_clear = profiles_per_cluster[3]["Original"]["y_"][20]  # Clear day
-profile_cloudy = profiles_per_cluster[1]["Original"]["y_"][13]  # Cloudy  #10
-
-profile_clear = profiles_per_cluster[3]["Original"]["y_"]
-profile_cloudy = profiles_per_cluster[1]["Original"]["y_"]
-
-profile_ = profile_cloudy
-fd_clear, rg_fd_clear, x_t_clear, y_t_clear = fractal_dimension(profile_clear, N_MAX=4)
-fd_cloudy, rg_fd_cloudy, x_t_cloudy, y_t_cloudy = fractal_dimension(profile_cloudy, N_MAX=4)
-
-fd_clear = fd_clear[CLEAR_DAY]
-rg_fd_clear = rg_fd_clear[CLEAR_DAY]
-x_t_clear = x_t_clear[CLEAR_DAY]
-y_t_clear = y_t_clear[CLEAR_DAY]
-
-fd_cloudy = fd_cloudy[CLOUDY_DAY]
-rg_fd_cloudy = rg_fd_cloudy[CLOUDY_DAY]
-x_t_cloudy = x_t_cloudy[CLOUDY_DAY]
-y_t_cloudy = y_t_cloudy[CLOUDY_DAY]
-
+# #%% Use birch and 10 min resolution an activate the commented code
+# CLEAR_DAY = 20  # Birch 6 clusters
+# CLOUDY_DAY = 13
+#
+# profile_clear = profiles_per_cluster[3]["Original"]["y_"][20]  # Clear day
+# profile_cloudy = profiles_per_cluster[1]["Original"]["y_"][13]  # Cloudy  #10
+#
+# profile_clear = profiles_per_cluster[3]["Original"]["y_"]
+# profile_cloudy = profiles_per_cluster[1]["Original"]["y_"]
+#
+# profile_ = profile_cloudy
+# fd_clear, rg_fd_clear, x_t_clear, y_t_clear = fractal_dimension(profile_clear, N_MAX=4)
+# fd_cloudy, rg_fd_cloudy, x_t_cloudy, y_t_cloudy = fractal_dimension(profile_cloudy, N_MAX=4)
+#
+# fd_clear = fd_clear[CLEAR_DAY]
+# rg_fd_clear = rg_fd_clear[CLEAR_DAY]
+# x_t_clear = x_t_clear[CLEAR_DAY]
+# y_t_clear = y_t_clear[CLEAR_DAY]
+#
+# fd_cloudy = fd_cloudy[CLOUDY_DAY]
+# rg_fd_cloudy = rg_fd_cloudy[CLOUDY_DAY]
+# x_t_cloudy = x_t_cloudy[CLOUDY_DAY]
+# y_t_cloudy = y_t_cloudy[CLOUDY_DAY]
+#
 
 # #%% Fractal dimension example
 # import matplotlib.patches as patches

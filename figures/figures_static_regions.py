@@ -1,7 +1,6 @@
-import numpy as np
-import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
@@ -12,9 +11,11 @@ from core.figure_utils import set_figure_art
 from typing import List, Tuple
 import numpy as np
 from scipy.interpolate import griddata
+from matplotlib.lines import Line2D
+import pandas as pd
 import pickle
 set_figure_art()
-mpl.rc('text', usetex=False)
+# mpl.rc('text', usetex=False)
 
 
 def load_scenarios_model(file_name_scenario_generator_model):
@@ -37,6 +38,8 @@ def plot_quantile_mixture_case(solution_quantile,
                                ):
     """Plots the quantiles of the daily voltage profiles"""
 
+    x_axis_ = pd.date_range(start="2021-11-01", periods=48, freq="30T")
+
     # max_quantile_keys = ["95", "90", "75", "50", "25", "10", "05"]
     max_quantile_keys = ["95", "90",  "75", "50"]  # Max and min quantile keys must have the same length
     min_quantile_keys = ["05", "10", "25", "50"]
@@ -55,19 +58,22 @@ def plot_quantile_mixture_case(solution_quantile,
 
     for max_quantile_, min_quantile_, linestyle_, color_ in zip(max_quantile_keys, min_quantile_keys, linestyles, colors):
         if max_quantile_ == max_quant_enhance:
-            ax.plot(solution_quantile["max_q_" + max_quantile_], linestyle=linestyle_, color="k", linewidth=1.1,
+            ax.plot(x_axis_, solution_quantile["max_q_" + max_quantile_], linestyle=linestyle_, color="k", linewidth=1.1,
                     label=max_quantile_ + r" \%", marker="o", markersize=1)
         else:
-            ax.plot(solution_quantile["max_q_" + max_quantile_], linestyle=linestyle_, color="k", linewidth=0.8,
+            ax.plot(x_axis_, solution_quantile["max_q_" + max_quantile_], linestyle=linestyle_, color="k", linewidth=0.8,
                     label=max_quantile_ + r" \%")
 
         if plot_min_voltages:
             if min_quantile_ == min_quant_enhance:
-                ax.plot(solution_quantile["min_q_" + min_quantile_], linestyle=linestyle_, color="grey", linewidth=1.1,
+                ax.plot(x_axis_, solution_quantile["min_q_" + min_quantile_], linestyle=linestyle_, color="grey", linewidth=1.1,
                         label=min_quantile_ + r" \%", marker="o", markersize=1)
             else:
-                ax.plot(solution_quantile["min_q_" + min_quantile_], linestyle=linestyle_, color="grey", linewidth=0.8,
+                ax.plot(x_axis_, solution_quantile["min_q_" + min_quantile_], linestyle=linestyle_, color="grey", linewidth=0.8,
                         label=min_quantile_ + r" \%")
+
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+        # ax.set_xlim((x_axis_[0], x_axis_[-1] + pd.Timedelta(minutes=29)))
 
 
 
@@ -109,7 +115,7 @@ def get_solutions_dictionary(path_file_solutions, quantiles: List[str]) -> dict:
         file_name_solutions_dictionary = f"solutions_dictionary_AWS_quantile_{quant_name}.pkl"
         with open(path_file_solutions / file_name_solutions_dictionary, "rb") as pickle_file:
             file_solutions_dict = pickle.load(pickle_file)
-            solutions_dict[quant_name] = file_solutions_dict
+            solutions_dict[quant_name] = file_solutions_dict  # This is critical to group all mixtures in the same quant
 
     return solutions_dict
 
@@ -300,6 +306,8 @@ warnings.filterwarnings("default")
 # FIGURE 1: Heat map with one contour plot and quantiles of daily voltage profile
 # =====================================================================================================================
 
+x_axis = pd.date_range(start="2021-11-01", periods=48, freq="30T")
+
 ax_ = np.empty((5, 3), dtype=object)
 fig = plt.figure(figsize=(7, 8.5))
 gs0 = gridspec.GridSpec(2, 1, figure=fig, wspace=0.2, hspace=0.08, left=0.11, bottom=0.11, right=0.98, top=0.94,
@@ -347,6 +355,10 @@ min_technical_voltage = 0.96
 titles_list = ["(a)", "(b)", "(c)"]
 norm_individual = mpl.colors.Normalize(vmin=min_voltage_cbar, vmax=max_voltage_cbar)
 
+# Create a legend that it will be showed in the heat map
+lines_ = [Line2D([0], [0], color="k", linewidth=1.5, linestyle='-')]
+labels_ = [r"$\overline{V}=1.05$" + " [p.u.]"]
+
 for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
                                                                       ax_1_row,
                                                                       ax_2_row,
@@ -387,20 +399,30 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
                        linestyles="solid")
     cs2 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_caution], linewidths=1.5,
                        linestyles="dashed")
-    cs3 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_green], linewidths=1.5,
-                       linestyles="dashdot")
+    # cs3 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_green], linewidths=1.5,
+    #                    linestyles="dashdot")
 
     ax_0.clabel(cs1, inline=True, fontsize=7, colors='k')
     ax_0.clabel(cs2, inline=True, fontsize=7, colors='k')
-    ax_0.clabel(cs3, inline=True, fontsize=7, colors='k')
+    # ax_0.clabel(cs3, inline=True, fontsize=7, colors='k')
 
 
 
     ax_0.set_title(f"{titles_list[ii]}\n"
-                   r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +
-                   r"\pi_2=" + f"{mixture_case[1]}" + r"," +
-                   r"\pi_3=" + f"{mixture_case[2]}" + r")$",
+                   r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +  # Cloudy
+                   r"\pi_2=" + f"{mixture_case[1]}" + r"," +  # Sunny
+                   r"\pi_3=" + f"{mixture_case[2]}" + r")$",  # Overcast
                    fontsize="x-large")
+
+    ax_0.legend(lines_, labels_, loc="upper center", handlelength=1.5, fontsize="large")
+
+    # WARNING: I changed the order, so it agrees with the clustering of one of the figures in the paper
+    # In the paper the order is (cluster_1 = cloudy, cluster_2=overcast, cluster_3=sunny)
+    # ax_0.set_title(f"{titles_list[ii]}\n"
+    #                r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +
+    #                r"\pi_2=" + f"{mixture_case[2]}" + r"," +
+    #                r"\pi_3=" + f"{mixture_case[1]}" + r")$",
+    #                fontsize="x-large")
 
     rect_upper_left = patches.Rectangle((-0.05, 0.95), width=0.1, height=0.1, linewidth=2, edgecolor='r',
                                         facecolor='none', linestyle="-")
@@ -428,19 +450,18 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
                                    min_quantile_highlight=QUANTILE,
                                    plot_min_voltages=True)
 
-        ax_col.text(x=x_max_ / 2,
+        ax_col.text(x=x_axis[np.ceil(x_max_/2).astype(int)],
                     y=y_max_ * 1.008,
                     s=str(round(y_max_, 3)) + " [p.u]", ha="center", va="center", fontsize="large",
                     color=color_)
-        ax_col.hlines(y=y_max_, xmin=0, xmax=x_max_, color="k", linewidth=0.8, linestyles="--")
+        ax_col.hlines(y=y_max_, xmin=x_axis[0], xmax=x_axis[x_max_], color="k", linewidth=0.8, linestyles="--")
+        # x_right_limit = ax_col.get_xlim()[1]
 
-        x_right_limit = ax_col.get_xlim()[1]
-
-        ax_col.text(x=x_min_ + (x_right_limit - x_min_) / 2 - 5,
+        ax_col.text(x=x_axis[x_min_],
                     y=y_min_ * (2 - 1.008),
                     s=str(round(y_min_, 3)) + " [p.u]", ha="center", va="center", fontsize="large",
                     color=color_)
-        ax_col.hlines(y=y_min_, xmin=x_min_, xmax=x_right_limit, color="k", linewidth=0.8, linestyles="--")
+        ax_col.hlines(y=y_min_, xmin=x_axis[x_min_], xmax=x_axis[-1], color="k", linewidth=0.8, linestyles="--")
 
         for spines in ax_col.spines.values():
             spines.set_color(color_)
@@ -449,7 +470,9 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
     ax_1.set_xticklabels(labels=[])
     ax_2.set_xticklabels(labels=[])
     ax_3.set_xticklabels(labels=[])
-    ax_4.set_xlabel("Time step")
+    ax_4.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    # ax_4.set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=29)))
+    ax_4.set_xlabel("Time of day")
 
     if ii == 0:  # ii Stands for columns in the plot
         ax_1.set_ylabel(f"Load: 0.0\nPV: 1.0" + "\nVoltage [p.u.]", fontsize="large")
@@ -516,7 +539,7 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
 
     # Limits to see minimum and maximum voltages correctly
     ax_1.set_ylim((0.968, 1.115))
-    ax_2.set_ylim((0.935, 1.028))
+    ax_2.set_ylim((0.935, 1.032))
     ax_3.set_ylim((0.981, 1.065))
     ax_4.set_ylim((0.96, 1.08))
 

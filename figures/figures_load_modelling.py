@@ -328,8 +328,8 @@ pf_values_samples_energy = power_factor_data(samples_copula_cluster_energy)
 #%%
 filter_dict = [{"regex": "_ap$"}, {"regex": "_rp$"}, "", ""]
 title_list = ["(a)", "(b)"]
-fig, ax = plt.subplots(1, 2, figsize=(7, 3))
-plt.subplots_adjust(wspace=0.4, bottom=0.2, left=0.1, right=0.95, top=0.9)
+fig, ax = plt.subplots(1, 2, figsize=(7, 2))
+plt.subplots_adjust(wspace=0.4, bottom=0.25, left=0.1, right=0.95, top=0.9)
 
 quantile_pairs = []
 for ii, regex_dict in zip(range(2), filter_dict):
@@ -382,7 +382,7 @@ for ii, regex_dict in zip(range(2), filter_dict):
         ax[0].legend(lgs,
                      lgs_names,
                      fontsize="medium",
-                     bbox_to_anchor=(-0.2, -0.15),
+                     bbox_to_anchor=(-0.2, -0.2),
                      loc="upper left",
                      ncol=4,
                      handlelength=1.5)

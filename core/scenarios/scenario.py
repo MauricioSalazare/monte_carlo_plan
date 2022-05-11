@@ -129,9 +129,9 @@ class ScenarioGenerator:
         Returns:
         =======
             ap_dict_matrix_cluster: dict: sampled active load profiles organized by node.
-                Key of the dictionary is he node number
+                Key of the dictionary is the node number
             rp_dict_matrix_cluster: dict: sampled reactive load profiles organized by node.
-                Key of the dictionary is he node number
+                Key of the dictionary is the node number
         """
 
         # Mapper to get the variable name right from the copula.
@@ -226,5 +226,9 @@ class ScenarioGenerator:
             for time_step in range(48):
                 case_dictionary[(scenario, time_step)] = {"P": active_power_stack_net[:, scenario, time_step],
                                                           "Q": reactive_power_stack[:, scenario, time_step]}
+
+        self._last_active_power_stack = active_power_stack
+        self._last_reactive_power_stack = reactive_power_stack
+        self._last_pv_generation_kw = pv_generation_kw
 
         return case_dictionary
