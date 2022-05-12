@@ -374,3 +374,29 @@ fw1.write_html('ternary_plot/outliers_highlight.html', auto_open=True)
 fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.pdf")
 fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.svg")
 fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.png", width=300*7, height=300*7, scale=1)
+
+#%% Overlay something on the ternary plot
+from plotly.subplots import make_subplots
+
+
+
+
+fig = make_subplots()
+fig.add_trace(c_trace)
+fig.add_trace(tick_trace)
+fig.add_trace(side_trace)
+fig.update_layout(layout)
+fig.add_trace(c_trace)
+
+
+fig = px.scatter_ternary(data_frame, a="Cloudy", b="Overcast", c="Sunny", width=600, height=510)
+fig.write_image(f"ternary_plot/ternary_classified_irradiance.pdf")
+fig.show()
+
+# fig.add_trace(trace2,secondary_y=True)
+# fig['layout'].update(height = 600, width = 800, title = title,xaxis=dict(
+#       tickangle=-90
+#     ))
+# iplot(fig)
+# fw1 = go.Figure(data=[c_trace, tick_trace, side_trace], layout=layout)
+fig.write_html('ternary_plot/test.html', auto_open=True)

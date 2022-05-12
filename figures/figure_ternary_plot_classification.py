@@ -59,4 +59,13 @@ for year_ in year_range:
         labeled_data_years[str(year_) + "-" + str(month_)] = labeled_data_year
 
 data_frame = pd.DataFrame.from_dict(mixture_years, orient="index")
-data_frame.columns = ["Cloudy", "Sunny", "Dark"]
+data_frame.columns = ["Cloudy", "Sunny", "Overcast"]
+data_frame.to_csv("/fig")
+
+#%%
+import plotly.express as px
+import plotly.io as pio
+pio.renderers.default = "browser"
+fig = px.scatter_ternary(data_frame, a="Cloudy", b="Overcast", c="Sunny", width=600, height=510)
+fig.write_image(f"ternary_plot/ternary_classified_irradiance.pdf")
+fig.show()

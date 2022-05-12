@@ -279,6 +279,8 @@ cs = ax.contour(X_high_res, Y_high_res, Ti_high_res, cmap='Greys', levels=20)
 ax.clabel(cs, inline=True, fontsize=7, colors ='k')
 
 #%%
+# ============================================================================================================================================================================================================================
+
 fig = plt.figure(figsize=(15, 6))
 ax1 = fig.add_subplot(1, 1, 1, projection='3d')
 # ax1.scatter(x_recovered_high_res, y_recovered_high_res, z_recovered_high_res, marker="o", s=1, facecolors='none', edgecolors='r')
