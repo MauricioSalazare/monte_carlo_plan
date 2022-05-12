@@ -4,6 +4,7 @@ import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
+from matplotlib.lines import Line2D
 import warnings
 from pathlib import Path
 from scipy import interpolate
@@ -11,7 +12,7 @@ from core.figure_utils import set_figure_art
 from typing import List, Tuple
 import numpy as np
 from scipy.interpolate import griddata
-from matplotlib.lines import Line2D
+
 import pandas as pd
 import pickle
 set_figure_art()
@@ -373,8 +374,6 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
                          solutions_dict[(mixture_case, 0.0, 0.0)],
                          solutions_dict[(mixture_case, *special_load_pv_comb[ii])]]  # Case over contour line
 
-
-
     coords_max = []
     coords_min = []
 
@@ -405,8 +404,6 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
     ax_0.clabel(cs1, inline=True, fontsize=7, colors='k')
     ax_0.clabel(cs2, inline=True, fontsize=7, colors='k')
     # ax_0.clabel(cs3, inline=True, fontsize=7, colors='k')
-
-
 
     ax_0.set_title(f"{titles_list[ii]}\n"
                    r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +  # Cloudy
@@ -562,6 +559,35 @@ plt.savefig('static_regions/static_region_border.pdf', dpi=700, bbox_inches='tig
 # =====================================================================================================================
 # FIGURE 2: Static operating zones
 # =====================================================================================================================
+import matplotlib.ticker as ticker
+
+# data for the (c) plot
+cut_off_values = np.array([100, 95, 90, 85, 80, 75])
+cut_off_values_risk = np.array([0, 5, 10, 15, 20, 25])
+pv_0_6 = np.array([0.235, 0.383, 0.435, 0.467, 0.493,0.515])
+pv_0_4 = np.array([0.144, 0.279, 0.32, 0.354, 0.383,0.41])
+pv_0_2 = np.array([0.04, 0.166, 0.2, 0.235, 0.262,0.285])
+
+
+fig, ax = plt.subplots(1,1, figsize=(4, 4))
+ax.plot(cut_off_values_risk, pv_0_6, "-o", color="blue", fillstyle='none', label=r"$\lambda_{0.6}$")
+ax.plot(cut_off_values_risk, pv_0_4, "-o", color="grey", fillstyle='none', label=r"$\lambda_{0.4}$")
+ax.plot(cut_off_values_risk, pv_0_2, "-o", color="orange", fillstyle='none', label=r"$\lambda_{0.2}$")
+ax.set_xlabel("Risk")
+ax.set_ylabel("PV Growth")
+ax.set_ylim((0, 0.6))
+ax.set_xlim((-0.5, 26))
+ax.grid()
+ax.legend(fontsize="medium",
+          loc="upper left",
+          title="Load growth")
+
+# ax.hlines(y=0.234, xmin=14, xmax=16, linewidth=1, edgecolor='b', facecolor='none', linestyle="-")
+# ax.arrow(x=15, y=0, dx=0, dy=0.234, length_includes_head=True, head_width=0.6, head_length=0.03, shape="full", color="b")
+# ax.text(x=17, y=0.11, s=r"$\lambda_{0.6}^{20\%}$", ha="center", va="center", fontsize=10, color="b")
+
+
+#%%
 
 max_technical_voltage_danger = 1.05
 warnings.filterwarnings("error")
@@ -570,76 +596,131 @@ critical_quantile_min = ["25", "10", "05"]
 titles_list = ["(a)", "(b)", "(c)"]
 min_quant_span = [0.90, 0.88, 0.86]  # This is calculated zooming into the figure and see the vertical contours
 critical_quantiles = list(set(critical_quantile_min + critical_quantile_max))
-solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_quantiles)
+solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_quantiles + ["100"])
+
+# ======= Compute worst case scenario
+matrix_worst_scenario = get_matrices_critical_quantiles("100",
+                                                        all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
+                                                        solutions_dict=solutions_dictx["100"],
+                                                        pv_growth_percentiles=x,
+                                                        load_growth_percentiles=y,
+                                                        process_max=True)
+fig, ax = plt.subplots(1,1)  # fake_graph to compute contour
+q_05_worst, _, _, _ = plot_contour_levels_irradiance_days(matrix_worst_scenario,
+                                                      contour_level=max_technical_voltage_danger,
+                                                      ax=ax,
+                                                      pv_growth_percentiles=x,
+                                                      load_growth_percentiles=y,
+                                                      linecolor_contour="b",
+                                                      linecolor_quantile="b",
+                                                      alpha_line_quantile=0.0)
+ax.plot(x, q_05_worst, color="r", linewidth=2)
 
 fig, ax_t = plt.subplots(1, 3, figsize=(7, 2.8))
 plt.subplots_adjust(left=0.08, right=0.95, top=0.86, bottom=0.3, wspace=0.35)
 
 # Iterate through columns
 for ii, ax in enumerate(ax_t):  # Iterate through columns
-    quant_to_process_min = critical_quantile_min[ii]
-    list_matrices = get_matrices_critical_quantiles(quant_to_process_min,
-                                                    all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
-                                                    solutions_dict=solutions_dictx[quant_to_process_min],
-                                                    pv_growth_percentiles=x,
-                                                    load_growth_percentiles=y,
-                                                    process_max=False)
-    q_05_min, q_50_min, q_95_min, _ = plot_contour_levels_irradiance_days(list_matrices,
-                                                                          contour_level=min_technical_voltage,
-                                                                          ax=ax,
-                                                                          pv_growth_percentiles=x,
-                                                                          load_growth_percentiles=y,
-                                                                          linecolor_contour="b",
-                                                                          linecolor_quantile="b",
-                                                                          alpha_line_quantile=0.0)
 
-    quant_to_process_max = critical_quantile_max[ii]
-    list_matrices = get_matrices_critical_quantiles(quant_to_process_max,
-                                                    all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
-                                                    solutions_dict=solutions_dictx[quant_to_process_max],
-                                                    pv_growth_percentiles=x,
-                                                    load_growth_percentiles=y,
-                                                    process_max=True)
+    if ii == 2:
+        ax.plot(cut_off_values_risk, pv_0_6, "-o", color="blue", fillstyle='none', label=r"$\lambda_{0.6}$")
+        ax.plot(cut_off_values_risk, pv_0_4, "-o", color="grey", fillstyle='none', label=r"$\lambda_{0.4}$")
+        ax.plot(cut_off_values_risk, pv_0_2, "-o", color="orange", fillstyle='none', label=r"$\lambda_{0.2}$")
+        ax.set_xlabel("Risk")
+        ax.set_ylabel("PV Growth")
+        ax.set_title(titles_list[ii] + "\n" f"Installed PV capacity", fontsize="x-large")
+        ax.set_ylim((-0.05, 0.6))
+        ax.set_xlim((-0.5, 26))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(5))
+        ax.xaxis.set_major_formatter(ticker.PercentFormatter(decimals=0))
+        ax.grid()
+        ax.legend(fontsize="medium",
+                  loc="lower right",
+                  title="Load growth")
 
-    q_05_max, q_50_max, q_95_max, _ = plot_contour_levels_irradiance_days(list_matrices,
-                                                                          contour_level=max_technical_voltage_danger,
-                                                                          # linecolor_contour="grey",
-                                                                          linecolor_contour="#9E5400",
-                                                                          linecolor_quantile="r",
-                                                                          pv_growth_percentiles=x,
-                                                                          load_growth_percentiles=y,
-                                                                          ax=ax)
-    ax.fill_between(x, 0, q_05_max, color="green", alpha=0.2, zorder=0, label="Safe")
-    ax.fill_between(x, q_05_max, q_95_max, color="orange", alpha=0.2, zorder=0, label="Caution")
-    ax.fill_between(x, q_95_max, 1, color="red", alpha=0.2, zorder=0, label="Overvoltage")
-    # ax.fill_between(x, 1, y_case_min.mean(axis=0), color="blue", alpha=0.2)
+    else:
+        quant_to_process_min = critical_quantile_min[ii]
+        list_matrices = get_matrices_critical_quantiles(quant_to_process_min,
+                                                        all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
+                                                        solutions_dict=solutions_dictx[quant_to_process_min],
+                                                        pv_growth_percentiles=x,
+                                                        load_growth_percentiles=y,
+                                                        process_max=False)
+        q_05_min, q_50_min, q_95_min, _ = plot_contour_levels_irradiance_days(list_matrices,
+                                                                              contour_level=min_technical_voltage,
+                                                                              ax=ax,
+                                                                              pv_growth_percentiles=x,
+                                                                              load_growth_percentiles=y,
+                                                                              linecolor_contour="b",
+                                                                              linecolor_quantile="b",
+                                                                              alpha_line_quantile=0.0)
 
-    f_quant = interpolate.interp1d(x, q_05_max, fill_value='extrapolate')
-    x_new = np.linspace(0,1,100)
-    y_new = f_quant(x_new)
+        quant_to_process_max = critical_quantile_max[ii]
+        list_matrices = get_matrices_critical_quantiles(quant_to_process_max,
+                                                        all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
+                                                        solutions_dict=solutions_dictx[quant_to_process_max],
+                                                        pv_growth_percentiles=x,
+                                                        load_growth_percentiles=y,
+                                                        process_max=True)
 
-    idx = x_new > min_quant_span[ii]
-    ax.fill_between(x_new[idx], 0, y_new[idx], color="blue", alpha=0.2, zorder=0, label="Undervoltage")
-    # ax.axvspan(min_quant_span[ii], 1, 0.0, 1.0, alpha=0.2, color='blue')
+        q_05_max, q_50_max, q_95_max, _ = plot_contour_levels_irradiance_days(list_matrices,
+                                                                              contour_level=max_technical_voltage_danger,
+                                                                              # linecolor_contour="grey",
+                                                                              linecolor_contour="#9E5400",
+                                                                              linecolor_quantile="r",
+                                                                              pv_growth_percentiles=x,
+                                                                              load_growth_percentiles=y,
+                                                                              ax=ax)
 
-    ax.grid()
-    ax.set_xlim((0, 1))
-    ax.set_ylim((0, 1))
-    ax.set_xlabel("Load Growth", fontsize="large")
-    ax.set_ylabel("PV Growth", fontsize="large")
-    ax.set_title(titles_list[ii] + "\n" f"Percentile {quant_to_process_max}" + r"\%", fontsize="x-large")
-    ax.grid(which="both", linestyle=":")
+        if ii == 0:
+            ax.plot(x, q_05_worst, color="purple", linewidth=1.5)
+        elif ii == 1:
+            ax.plot(x, q_05_worst, color="purple", linewidth=1.5, label=r"0\% Risk")
+            ax.scatter([0.6], [0.435], s=18, color="blue")
+            ax.scatter([0.6], [0.237], s=18, color="purple")
 
-    if ii==1:
+            ax.text(x=0.72, y=0.435, s=r"$\lambda_{0.6}^{10\%}$", ha="center", va="center", fontsize=10, color="b")
+            ax.text(x=0.72, y=0.237, s=r"$\lambda_{0.6}^{0\%}$", ha="center", va="center", fontsize=10, color="purple")
+            lh, ll = ax.get_legend_handles_labels()
+
+
+        ax.fill_between(x, 0, q_05_max, color="green", alpha=0.2, zorder=0, label="Safe")
+        ax.fill_between(x, q_05_max, q_95_max, color="orange", alpha=0.2, zorder=0, label="Caution")
+        ax.fill_between(x, q_95_max, 1, color="red", alpha=0.2, zorder=0, label="Overvoltage")
+        # ax.fill_between(x, 1, y_case_min.mean(axis=0), color="blue", alpha=0.2)
+
+        f_quant = interpolate.interp1d(x, q_05_max, fill_value='extrapolate')
+        x_new = np.linspace(0,1,100)
+        y_new = f_quant(x_new)
+
+        idx = x_new > min_quant_span[ii]
+        ax.fill_between(x_new[idx], 0, y_new[idx], color="blue", alpha=0.2, zorder=0, label="Undervoltage")
+        # ax.axvspan(min_quant_span[ii], 1, 0.0, 1.0, alpha=0.2, color='blue')
+
+        ax.grid()
+        ax.set_xlim((0, 1))
+        ax.set_ylim((0, 1))
+        ax.set_xlabel("Load Growth", fontsize="large")
+        ax.set_ylabel("PV Growth", fontsize="large")
+        ax.set_title(titles_list[ii] + "\n" f"Risk {100 - int(quant_to_process_max)}" + r"\%", fontsize="x-large")
+        ax.grid(which="both", linestyle=":")
+
+    if ii==0:
         ax.legend(fontsize="x-large",
-                  bbox_to_anchor=(-0.87, -0.18),
+                  bbox_to_anchor=(0.5, -0.18),
                   loc="upper left",
                   ncol=4,
                   title="Static Operating Zones:",
                   title_fontsize="x-large",
                   handlelength=1.5)
+    elif ii==1:
+        ax.legend(lh,
+                  ll,
+                  fontsize="medium",
+                  loc="upper left",
+                  handlelength=1)
 
-# plt.savefig('static_regions/static_contour_plots.pdf', dpi=700, bbox_inches='tight')
+plt.savefig('static_regions/static_contour_plots.pdf', dpi=700, bbox_inches='tight')
 
 
 #%%

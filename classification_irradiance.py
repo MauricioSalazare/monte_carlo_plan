@@ -19,7 +19,6 @@ from pvlib.location import Location
 #           1: "Sunny day",
 #           2: "Dark/Rainy day"}
 
-
 #%%
 # Data for the Twente climatological station.
 latitude = 52.27314817052
@@ -38,7 +37,6 @@ cs_haurwitz.rename(columns={"ghi": "ghi_haurwitz"}, inplace=True)
 cs_ineichen.rename(columns={"ghi": "ghi_ineichen"}, inplace=True)
 
 # cs.index = cs.index - pd.Timedelta(hours=0.5)
-
 #%%
 file_name=r"data/processed_data/consumption_weather/time_series_data.csv"
 file_path_outliers = r"data/processed_data/consumption_weather/outlier_transformers.csv"
@@ -46,7 +44,7 @@ file_irradiance_full_data = r"data/processed_data/consumption_weather/knmi_hourl
 file_irradiance_clusters = r"data/processed_data/consumption_weather/clustering_irradiance.csv"
 
 data = load_time_series(file_name, file_path_outliers=file_path_outliers)
-clusters_irradiance = pd.read_csv(file_irradiance_clusters, index_col=0)
+clusters_irradiance = pd.read_csv(file_irradiance_clusters, index_col=0)  # Days labeled by clustering algorithm
 knmi_hourly_w_m2 = pd.read_csv(file_irradiance_full_data,
                                parse_dates=True,
                                index_col='TIMESTAMP',
@@ -62,39 +60,22 @@ work_range = knmi_csi.loc['2020-01-01':'2020-12-30'].copy()
 work_range.plot()
 work_range.rename(columns={"ghi_solis": "ghi"}, inplace=True)
 
-
-
 #%% Saturate the true readings to avoid values bigger than 1
 knmi_test = work_range[["qg", "ghi"]].copy(deep=True)
-# idx = (knmi_test["qg"] > knmi_test["ghi"]).values
-# knmi_test.loc[idx, "qg"] = knmi_test.loc[idx, "ghi"]
-
-# idx = (knmi_test["ghi"] == 0.0).values
-# knmi_test.loc[idx, "qg"] = 0
-
-#%%
-fig, ax = plt.subplots(1,1, figsize=(20,5))
-knmi_test.plot(ax=ax)
-#%%
-
 
 fig, ax = plt.subplots(1,1, figsize=(20,5))
-knmi_test.plot(ax=ax)
+knmi_test[["qg", "ghi"]].plot(ax=ax)
 knmi_test["csi"] = knmi_test["qg"] / knmi_test["ghi"]
-
-
 knmi_test["csi"][knmi_test["csi"] > 2.0] = np.nan
 knmi_test["csi"].replace(np.inf, 0, inplace=True)
-# knmi_test["csi"].fillna(0, inplace=True)
-# work_range["ghi"] / work_range["qg"]
 ax_2= ax.twinx()
-knmi_test["csi"].resample("D").mean().plot(drawstyle="steps-post", linewidth=2, ax=ax_2)
-
+knmi_test["csi"].resample("D").mean().plot(drawstyle="steps-post", linewidth=2, ax=ax_2, color="g")
+ax_2.set_ylim((0, 1.3))
+ax_2.legend(loc="upper left")
 
 #%%
 fig, ax = plt.subplots(1,1, figsize=(5,5))
 knmi_test["csi"].plot.hist(bins=50, ax=ax)
-
 
 #%%
 csi_daily = knmi_test["csi"].resample("D").mean()  # If you resample per hour MUST USE ffill
@@ -111,20 +92,16 @@ sns.histplot(x=energy_irradiance, ax= ax)
 
 min_irr = energy_irradiance.min()
 max_irr = energy_irradiance.max()
-
 bin_irr = (max_irr - min_irr) / 3
-
 idx_dark = (energy_irradiance < min_irr + bin_irr).values
 idx_cloudy = ((energy_irradiance > min_irr + bin_irr)  & (energy_irradiance < min_irr + 2 * bin_irr)).values
 idx_sunny = ((energy_irradiance > min_irr + 2 * bin_irr)  & (energy_irradiance < min_irr + 3 * bin_irr)).values
 
-
-new_clustering = irr_data_low_res.copy()
+new_clustering = irr_data_low_res.copy(deep=True)
 new_clustering["cluster"] = 0
 new_clustering["cluster"][idx_dark] = 2
 new_clustering["cluster"][idx_cloudy] = 0
 new_clustering["cluster"][idx_sunny] = 1
-
 
 #%%
 fig, ax = plt.subplots(1, 3, figsize=(15, 5))
@@ -136,11 +113,6 @@ for ax_i, cluster_ in zip(ax_, [0,1,2]):
 
 
 #%%
-
-
-
-
-
 clean_day = irr_data_low_res.loc[213].values
 clean_day_2 = irr_data_low_res.loc[266].values
 
@@ -158,11 +130,6 @@ ax_2 = ax.twinx()
 # ax_2.plot(np.diff(clean_day_2), '--o', color='r')
 # ax_2.plot(np.diff(np.diff(clean_day)), '--x', color='b')
 ax.grid()
-
-
-
-
-
 
 #%%
 fig, ax = plt.subplots(1,1)
@@ -210,10 +177,6 @@ ax_ = ax.flatten()
 for ax_i, cluster_ in zip(ax_, [0,1,2]):
     idx_cluster = labeled_data_year["cluster"] == cluster_
     ax_i.plot(labeled_data_year[idx_cluster].values.T)
-
-
-
-
 
 #%%
 
@@ -276,21 +239,11 @@ for year_ in year_range:
         labeled_data_years[str(year_) + "-" + str(month_)] = labeled_data_year
 
 data_frame = pd.DataFrame.from_dict(mixture_years, orient="index")
-data_frame.columns = ["Cloudy", "Sunny", "Dark"]
-
-#%%
-YEAR = "1990-7"
-fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-ax_ = ax.flatten()
-
-for ax_i, cluster_ in zip(ax_, [0,1,2]):
-    idx_cluster = labeled_data_years[YEAR]["cluster"] == cluster_
-    ax_i.plot(labeled_data_years[YEAR][idx_cluster].values.T)
-
+data_frame.columns = ["Cloudy", "Sunny", "Overcast"]
 
 #%%
 import plotly.express as px
 import plotly.io as pio
 pio.renderers.default = "browser"
-fig = px.scatter_ternary(data_frame, a="Cloudy", b="Dark", c="Sunny")
+fig = px.scatter_ternary(data_frame, a="Cloudy", b="Overcast", c="Sunny")
 fig.show()

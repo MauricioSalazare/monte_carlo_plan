@@ -1,10 +1,10 @@
-import numpy as np
-import pickle
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
 import matplotlib.ticker as ticker
+from matplotlib.lines import Line2D
 import warnings
 from pathlib import Path
 from scipy import interpolate
@@ -12,6 +12,8 @@ from core.figure_utils import set_figure_art
 from typing import List, Tuple
 import numpy as np
 from scipy.interpolate import griddata
+
+import pandas as pd
 import pickle
 set_figure_art()
 # mpl.rc('text', usetex=False)
@@ -34,7 +36,9 @@ def plot_quantile_mixture_case_loading(solution_quantile,
                                        max_current,
                                        max_quantile_highlight: str = None
                                        ):
-    """Plots the quantiles of the daily voltage profiles"""
+    """Plots the quantiles of the daily line loading (connected to transformer) profiles"""
+
+    x_axis_ = pd.date_range(start="2021-11-01", periods=48, freq="30T")
 
     max_quantile_keys = ["95", "90",  "75", "50"]  # Max and min quantile keys must have the same length
     linestyles = ["dashdot", "dashed", "dotted", "solid"]
@@ -47,11 +51,14 @@ def plot_quantile_mixture_case_loading(solution_quantile,
 
     for max_quantile_, linestyle_, color_ in zip(max_quantile_keys, linestyles, colors):
         if max_quantile_ == max_quant_enhance:
-            ax.plot(solution_quantile["max_q_" + max_quantile_] / max_current, linestyle=linestyle_, color="k", linewidth=1.1,
+            ax.plot(x_axis_, solution_quantile["max_q_" + max_quantile_] / max_current, linestyle=linestyle_, color="k", linewidth=1.1,
                     label=max_quantile_ + r" \%", marker="o", markersize=1)
         else:
-            ax.plot(solution_quantile["max_q_" + max_quantile_] / max_current, linestyle=linestyle_, color="k", linewidth=0.8,
+            ax.plot(x_axis_, solution_quantile["max_q_" + max_quantile_] / max_current, linestyle=linestyle_, color="k", linewidth=0.8,
                     label=max_quantile_ + r" \%")
+
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    # ax.set_xlim((x_axis_[0], x_axis_[-1] + pd.Timedelta(minutes=29)))
 
 
 def get_coords_max_values(profile):
@@ -287,6 +294,7 @@ warnings.filterwarnings("default")  # This is dangerous as plotting issues are n
 # FIGURE 1: Heat map with one contour plot and quantiles of daily voltage profile
 # =====================================================================================================================
 
+x_axis = pd.date_range(start="2021-11-01", periods=48, freq="30T")
 I_MAX = 200
 
 ax_ = np.empty((5, 3), dtype=object)
@@ -330,6 +338,12 @@ max_technical_load_danger = np.round(max_technical_load_green * 1.16, 3)
 titles_list = ["(a)", "(b)", "(c)"]
 norm_individual = mpl.colors.Normalize(vmin=min_load_cbar, vmax=max_load_cbar)
 
+# Create a legend that it will be showed in the heat map
+lines_ = [Line2D([0], [0], color="k", linewidth=1.5, linestyle='dotted'),
+          Line2D([0], [0], color="k", linewidth=1.5, linestyle='solid')]
+labels_ = [r"$I_{nom}=1.0$",
+           r"$I_{max}=1.16$"]
+
 for ii, (ax_0, ax_1, ax_2, ax_3, mixture_case) in enumerate(zip(ax_0_row,
                                                                 ax_1_row,
                                                                 ax_2_row,
@@ -361,24 +375,24 @@ for ii, (ax_0, ax_1, ax_2, ax_3, mixture_case) in enumerate(zip(ax_0_row,
     for color_, (_, y_max_) in zip(colors_, coords_max):
         cbar.ax.vlines(x=y_max_, ymin=0, ymax=10, linewidth=2, color=color_)
 
-    cs1 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_danger], linewidths=1.5,
-                       linestyles="solid")
-    cs2 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_caution], linewidths=1.5,
-                       linestyles="dashed")
-    cs3 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_green], linewidths=1.5,
-                       linestyles="dashdot")
+    cs1 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_danger],
+                       linewidths=1.5, linestyles="solid")  # I nominal * 1.16
+    # cs2 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_caution], linewidths=1.5,
+    #                    linestyles="dashed")
+    cs3 = ax_0.contour(x, y, list_matrices_plot[ii] / I_MAX, colors="k", levels=[max_technical_load_green],
+                       linewidths=1.5, linestyles="dotted")  # I nominal
 
     ax_0.clabel(cs1, inline=True, fontsize=7, colors='k')
-    ax_0.clabel(cs2, inline=True, fontsize=7, colors='k')
+    # ax_0.clabel(cs2, inline=True, fontsize=7, colors='k')
     ax_0.clabel(cs3, inline=True, fontsize=7, colors='k')
-
-
 
     ax_0.set_title(f"{titles_list[ii]}\n"
                    r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +
                    r"\pi_2=" + f"{mixture_case[1]}" + r"," +
                    r"\pi_3=" + f"{mixture_case[2]}" + r")$",
                    fontsize="x-large")
+
+    ax_0.legend(lines_, labels_, loc="upper left", handlelength=1.2, fontsize="medium")
 
     # rect_upper_left = patches.Rectangle((-0.05, 0.95), width=0.1, height=0.1, linewidth=2, edgecolor='r',
     #                                     facecolor='none', linestyle="-")
@@ -404,17 +418,17 @@ for ii, (ax_0, ax_1, ax_2, ax_3, mixture_case) in enumerate(zip(ax_0_row,
                                            ax=ax_col,
                                            max_current=I_MAX,
                                            max_quantile_highlight=QUANTILE)
-        ax_col.text(x=x_max_ / 2,
+        ax_col.text(x=x_axis[np.ceil(x_max_ / 2).astype(int)],
                     y=y_max_ * 1.1,
                     s=str(round(y_max_, 2)) + " [p.u]", ha="center", va="center", fontsize="large",
                     color=color_)
-        ax_col.hlines(y=y_max_, xmin=0, xmax=x_max_, color="k", linewidth=0.8, linestyles="--")
+        ax_col.hlines(y=y_max_, xmin=x_axis[0], xmax=x_axis[x_max_], color="k", linewidth=0.8, linestyles="--")
 
         # ax_col.hlines(y=1.16, xmin=0, xmax=ax_col.get_xlim()[1], color="grey", linewidth=0.3, linestyles="-")
         # ax_col.hlines(y=1.00, xmin=0, xmax=ax_col.get_xlim()[1], color="grey", linewidth=0.3, linestyles="-")
-        ax_col.fill_between(np.linspace(0,48), y1=1.0, y2=1.16, color="grey", alpha=0.2, label="Caution loading region")
+        ax_col.fill_between([x_axis[0], x_axis[-1]], y1=1.0, y2=1.16, color="grey", alpha=0.2, label="Caution loading region")
 
-        x_right_limit = ax_col.get_xlim()[1]
+        # x_right_limit = ax_col.get_xlim()[1]
 
         for spines in ax_col.spines.values():
             spines.set_color(color_)
@@ -422,7 +436,8 @@ for ii, (ax_0, ax_1, ax_2, ax_3, mixture_case) in enumerate(zip(ax_0_row,
 
     ax_1.set_xticklabels(labels=[])
     ax_2.set_xticklabels(labels=[])
-    ax_3.set_xlabel("Time step")
+    ax_3.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    ax_3.set_xlabel("Time of day")
 
     if ii == 0:  # ii Stands for columns in the plot
         # ax_1.set_ylabel(f"Load: 0.0\nPV: 1.0" + "\nVoltage [p.u.]", fontsize="large")
