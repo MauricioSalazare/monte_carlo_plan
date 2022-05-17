@@ -745,6 +745,8 @@ cs_ineichen.rename(columns={"ghi": "ghi_ineichen"}, inplace=True)
 data_aligned = pd.concat([knmi_10min_w_m2[["qg"]], cs_haurwitz, cs_simplified_solis[["ghi_solis"]], cs_ineichen[["ghi_ineichen"]]], axis=1)
 data_aligned.resample(RESAMPLE).mean()[START_DATE:END_DATE].plot()
 data_aligned_sliced = data_aligned.resample(RESAMPLE).mean()[START_DATE:END_DATE].copy()
+data_aligned_sliced.plot()
+
 day_mapping = day_processing_mapper(data_aligned_sliced, IRR_THRESHOLD=20)
 
 day_mapping_frame = pd.DataFrame.from_dict(day_mapping).transpose()
@@ -813,6 +815,14 @@ remap_label = {0: 1,
                1: 2,
                2: 0}
 label_frame["cluster"] = label_frame["cluster"].apply(lambda x: remap_label[x])
+label_frame["cluster"].to_csv(r"data/processed_data/consumption_weather/clustering_irradiance_improved_model.csv")
+
+combined = 2021*1000 + 60
+data_of_year = pd.to_datetime(combined, format = "%Y%j")
+print(data_of_year)
+data_aligned_sliced.plot()
+
+
 
 data_list_raw = [np.array(day_mapping_frame["q_t_all"].dropna().to_list()),  # TODO: Repeated from data list
                  np.array(day_mapping_frame["y_real_prime"].dropna().to_list()),

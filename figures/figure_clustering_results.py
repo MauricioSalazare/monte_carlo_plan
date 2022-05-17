@@ -111,10 +111,10 @@ plt.savefig('load_model/cluster_metrics.pdf', dpi=700, bbox_inches='tight')
 ranked_scores_cluster_three = pd.concat([score_values_ap[key_][[N_CLUSTER]].rename(columns={N_CLUSTER: key_}) for key_ in score_values_ap], axis=1)
 ranked_scores_cluster_three_filtered = ranked_scores_cluster_three[["DBI", "MDI", "CHI", "SI"]]
 print("Scores for cluster 3")
-print(ranked_scores_cluster_three_filtered.sort_values(by=["DBI", "MDI"]))
+print(ranked_scores_cluster_three_filtered.sort_values(by=["CHI", "SI"]))
 
 #%% Adjusted rand score to check the similarity between the clustering results. Reference is the Spectral clustering:
-y_real = ap_cluster_solutions[N_CLUSTER]["Spectral"]
+y_real = ap_cluster_solutions[N_CLUSTER]["KMeans"]
 rand_scores = {}
 for algo in algorithms:
     y_pred = ap_cluster_solutions[N_CLUSTER][algo]
@@ -143,6 +143,7 @@ cluster_count = cluster_count[["C1", "C2", "C3"]]
 
 #%% Merge all the table
 table = pd.concat([ranked_scores_cluster_three_filtered.round(3), rand_indexes.round(3), cluster_count], axis=1)
-table = table.sort_values(by=["DBI", "MDI"])
+table = table.sort_values(by=["CHI", "SI"], ascending=False)
+table = table[["CHI","SI","DBI","MDI", "RI", "C1","C2","C3"]]
 # table.to_csv("load_model/clustering_metrics.csv")
 print(table)

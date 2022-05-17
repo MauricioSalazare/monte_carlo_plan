@@ -19,7 +19,7 @@ def filter_power(data_frame: pd.DataFrame,
                  percentage=0.8) -> pd.DataFrame:
     """
     Filter transformers which contains at least a minimum amount of "percentage" of non-nan values in the dataset.
-    Also, it is filtered by years and moths.
+    Also, it is filtered by years and months.
 
     """
 

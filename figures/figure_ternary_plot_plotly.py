@@ -2,6 +2,7 @@
 # https://nbviewer.org/github/empet/Ternary-contour-plot/blob/master/Plotly-ternary-contour-plot.ipynb
 
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import numpy as np
 from scipy.interpolate import griddata
 import pandas as pd
@@ -18,7 +19,8 @@ LINE_WIDTH_CONTOUR = 0.3
 def load_data(load: float,
               pv: float,
               quant_value: str,
-              file_path: Path=None,):
+              file_path: Path=None,
+              offset: float=0.0):
 
     assert (0 <= pv <= 1.0) and (0 <= load <= 1.0), "Load and PV must be between [0,1]"
 
@@ -37,7 +39,7 @@ def load_data(load: float,
         mixture_, load_, pv_ = solution_key
         if (load == load_) and (pv == pv_):
             mixture_count += 1
-            solutions_ternary[mixture_] = solutions_dict[solution_key]["max_q_" + quant_value].max()
+            solutions_ternary[mixture_] = np.max(solutions_dict[solution_key]["max_q_" + quant_value] - offset)
 
     print(f"Total mixture in load-PV combination: {mixture_count}")
     print(f"Min. voltage: {min(solutions_ternary.values())}")
@@ -256,10 +258,16 @@ def styling_traces(xt, yt):
 
     return side_trace, tick_trace
 
-LOAD = 0.5
-PV = 0.5
+LOAD = 0.6
+PV = 0.7
+OFFSET = 0.008  # TODO: WARNING: This value should be the same in the in the static regions scripts!!!
+QUANTILE = "90"
 
-data_voltage = load_data(load=LOAD, pv=PV, quant_value="90")
+norm_individual = mpl.colors.Normalize(vmin=CMIN_VMIN, vmax=CMAX_VMAX)
+v_safe = norm_individual(1.045)
+v_caution = norm_individual(1.05)
+
+data_voltage = load_data(load=LOAD, pv=PV, quant_value=QUANTILE, offset=OFFSET)
 
 A = data_voltage["cloudy"].values
 C = data_voltage["sunny"].values
@@ -351,10 +359,6 @@ layout = ternary_layout(title="Ternary plot", width=600, height=510, vertex_text
 # layout = ternary_layout(title="Ternary plot", width=int(600 * (2/3)), height=int(255 * (2/3)), vertex_text=["Cloudy", "Overcast", "Sunny"])
 annotations = set_ticklabels(layout['annotations'], posx, posy, proportion=True)
 
-norm_individual = mpl.colors.Normalize(vmin=CMIN_VMIN, vmax=CMAX_VMAX)
-v_safe = norm_individual(1.045)
-v_caution = norm_individual(1.05)
-
 alpha = 0.9
 green_color = f"rgba(127,191,127, {alpha})"
 orange_color = f"rgba(255,192,76, {alpha})"
@@ -370,33 +374,37 @@ fw1 = go.Figure(data=[c_trace, tick_trace, side_trace], layout=layout)
 fw1.layout.annotations = annotations
 
 fw1.update_coloraxes(showscale=False)
-fw1.write_html('ternary_plot/outliers_highlight.html', auto_open=True)
-fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.pdf")
-fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.svg")
-fw1.write_image(f"ternary_load{int(LOAD*100)}_pv{int(PV*100)}.png", width=300*7, height=300*7, scale=1)
+# fw1.write_html('ternary_plot/ternary_plot_case.html', auto_open=True)
 
-#%% Overlay something on the ternary plot
-from plotly.subplots import make_subplots
+#% Overlay historical data on the ternary plot
+historical = pd.read_csv(r"ternary_plot/ternary_data/historical_data_classified.csv", index_col=0)
+hist_dict = historical.to_dict('index')
+hist_list_dict = [hist_dict[key_] for key_ in hist_dict]
 
+A_ = historical["cloudy"].values
+C_ = historical["sunny"].values
+B_ = historical["overcast"].values
 
+cartes_coord_points_ = np.einsum('ik, kj -> ij', M, np.stack((A_, B_, C_)))
+xx_, yy_ = cartes_coord_points_[:2]
 
+trace_scatter_ = go.Scatter(x=xx_,
+                            y=yy_,
+                            name='Historical',
+                            mode='markers',
+                            marker_color="rgba(0,0,255,0.8)",
+                            marker_line_width=0.0,
+                            marker_size=8)
 
 fig = make_subplots()
+fig.add_trace(trace_scatter_)
 fig.add_trace(c_trace)
 fig.add_trace(tick_trace)
 fig.add_trace(side_trace)
 fig.update_layout(layout)
-fig.add_trace(c_trace)
-
-
-fig = px.scatter_ternary(data_frame, a="Cloudy", b="Overcast", c="Sunny", width=600, height=510)
-fig.write_image(f"ternary_plot/ternary_classified_irradiance.pdf")
-fig.show()
-
-# fig.add_trace(trace2,secondary_y=True)
-# fig['layout'].update(height = 600, width = 800, title = title,xaxis=dict(
-#       tickangle=-90
-#     ))
-# iplot(fig)
-# fw1 = go.Figure(data=[c_trace, tick_trace, side_trace], layout=layout)
-fig.write_html('ternary_plot/test.html', auto_open=True)
+fig.update_layout(showlegend=False)
+fig.write_html('ternary_plot/ternary_plot_with_historical.html', auto_open=True)
+fig.write_image(f"ternary_plot/ternary_plot_with_historical.pdf")
+fig.write_image(f"ternary_plot/ternary_load{int(LOAD*100)}_pv{int(PV*100)}.pdf")
+# fig.write_image(f"ternary_plot/ternary_load{int(LOAD*100)}_pv{int(PV*100)}.svg")
+# fig.write_image(f"ternary_plot/ternary_load{int(LOAD*100)}_pv{int(PV*100)}.png", width=300*7, height=300*7, scale=1)

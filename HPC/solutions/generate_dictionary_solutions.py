@@ -44,6 +44,12 @@ QUANTILE_DICT = {"00": {"max_tag": "max_q_00",
                  "975": {"max_tag": "max_q_975",
                         "min_tag": "min_q_975",
                         "quantile": 0.975},
+                 "98": {"max_tag": "max_q_98",
+                        "min_tag": "min_q_98",
+                        "quantile": 0.98},
+                 "99": {"max_tag": "max_q_99",
+                        "min_tag": "min_q_99",
+                        "quantile": 0.99},
                  "100": {"max_tag": "max_q_100",
                         "min_tag": "min_q_100",
                         "quantile": 1.0}
@@ -217,9 +223,8 @@ if __name__ == "__main__":
 
     # TODO: If you do it all at once, memory will overflow and stop working
     list_quantiles = [
-                      (cases_combinations, "85"),
-                      (cases_combinations, "80"),
-                      (cases_combinations, "975")
+                      (cases_combinations, "98"),
+                      (cases_combinations, "99")
                       # (cases_combinations, "05"),
                       # (cases_combinations, "10"),
                       # (cases_combinations, "25")

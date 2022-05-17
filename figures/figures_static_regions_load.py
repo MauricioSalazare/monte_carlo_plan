@@ -295,7 +295,7 @@ warnings.filterwarnings("default")  # This is dangerous as plotting issues are n
 # =====================================================================================================================
 
 x_axis = pd.date_range(start="2021-11-01", periods=48, freq="30T")
-I_MAX = 200
+I_MAX = 230
 
 ax_ = np.empty((5, 3), dtype=object)
 fig = plt.figure(figsize=(7, 7))
@@ -319,9 +319,9 @@ ax_2_row = ax_[2, :].flatten()
 ax_3_row = ax_[3, :].flatten()
 
 # Combinations of load and pv that lies in the contour line
-special_load_pv_comb = [(0.8, 0.6),
-                        (0.8, 0.6),
-                        (0.8, 0.6)]
+special_load_pv_comb = [(0.9, 0.8),
+                        (0.9, 0.8),
+                        (0.9, 0.8)]
 
 special_rectangles = [] # (x0, y0) cooridnates of the purple boxes
 for (special_load, special_pv) in special_load_pv_comb:
