@@ -1489,6 +1489,8 @@ n_steps = pivoted_series.shape[1]-1
 x_axis = pd.date_range(start="2021-11-01", periods=n_steps, freq=RESAMPLE)
 
 #%%
+# =====================================================================================================================
+# Figure 1 ============================================================================================================
 # fig = plt.figure(figsize=(7.1, 3))
 fig = plt.figure(figsize=(14.2, 6))
 gs = gridspec.GridSpec(4, 4, wspace=0.35, hspace=0.35, left=0.08, bottom=0.07, right=0.95, top=0.95, width_ratios=[2, 2, 1, 1.5], height_ratios=[1, 1, 1, 1])
@@ -1591,6 +1593,110 @@ for ii in range(4):
         ax[ii, 3].set_xlabel("Month of year")
 
 plt.savefig('figures/solar_model_proposal/generative_profiles.png', dpi=700, bbox_inches='tight')
+
+# =====================================================================================================================
+# =====================================================================================================================
+#%%
+fig10 = plt.figure(constrained_layout=True, figsize=(7, 7))
+gs0 = fig10.subfigures(4, 2)
+axes_ts = np.array([], dtype=object)
+axes_hm = np.array([], dtype=object)
+# subplots_ts = np.array([], dtype=object)
+for ii in range(4):
+    ax_temp = gs0[ii, 0].subplots(2, 1)
+    axes_ts = np.concatenate([axes_ts, ax_temp])
+    axes_hm = np.concatenate([axes_hm, np.array([gs0[ii, 1].subplots(1, 1)], dtype=object)])
+
+titles_list = [["(a)", "(b)",],
+               ["(c)", "(d)",],
+               ["(e)", "(f)",],
+               ["(g)", "(h)"]]
+
+y_labels_list = [" Original profiles\n$\pi=(0.44, 0.26, 0.3)$\n\t   W/m${}^2$",
+                 " Synthetic profiles\n$\pi=(0.44, 0.26, 0.3)$\n\t   W/m${}^2$",
+                 " Synthetic profiles\n$\pi=(0.0, 0.0, 1.0)$\n\t   W/m${}^2$",
+                 " Synthetic profiles\n$\pi=(0.0, 1.0, 0.0)$\n\t   W/m${}^2$"]
+
+for ii, ii_data in zip([0,2,4,6], [0,1,2,3]):
+    if ii == 0:
+        column_label = "qg"  # Original data
+    else:
+        column_label = "qg_hat"  # Sampled data
+
+    # locator = mdates.AutoDateLocator()
+    locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
+    formatter = mdates.ConciseDateFormatter(locator)
+    formatter.formats = ['%y',  # ticks are mostly years
+                         '%b',  # ticks are mostly months
+                         '%d',  # ticks are mostly days
+                         '%H:%M',  # hrs
+                         '%H:%M',  # min
+                         '%S.%f', ]  # secs
+    formatter.offset_formats = [''] * 6
+
+    axes_ts[ii].plot(profiles_sampled[ii_data][[column_label]]["2021-06-01":"2021-06-15"].resample("30T").mean(),
+                     label="1", zorder=3)
+
+    axes_ts[ii].plot(profiles_sampled[ii_data][["ghi_haurwitz"]]["2021-06-01":"2021-06-15"].resample("30T").mean(),
+                     label="2", zorder=1, color="#66B266")
+
+    axes_ts[ii].set_ylim((-10, 1100))
+    # axes_ts[ii].set_ylabel(y_labels_list[ii_data], fontsize="large")
+    gs0[ii_data, 0].supylabel(y_labels_list[ii_data], fontsize="large", va="center")
+    # axes_ts[ii].yaxis.set_label_coords()
+    axes_ts[ii].set_title(titles_list[ii_data][0])
+    axes_ts[ii].xaxis.set_major_locator(locator)
+    axes_ts[ii].xaxis.set_major_formatter(formatter)
+
+    locator = mdates.AutoDateLocator(minticks=3, maxticks=15)
+    formatter = mdates.ConciseDateFormatter(locator)
+    formatter.formats = ['%y',  # ticks are mostly years
+                         '%b',  # ticks are mostly months
+                         '%d',  # ticks are mostly days
+                         '%H:%M',  # hrs
+                         '%H:%M',  # min
+                         '%S.%f', ]  # secs
+    formatter.offset_formats = [''] * 6
+
+    axes_ts[ii + 1].plot(profiles_sampled[ii_data][[column_label]]["2021-03-01":"2021-03-15"].resample("30T").mean(),
+                         label="$\hat{q}_t$", zorder=3)
+    axes_ts[ii + 1].plot(profiles_sampled[ii_data][["ghi_haurwitz"]]["2021-03-01":"2021-03-15"].resample("30T").mean(),
+                         label="GHI Model", zorder=1, color="#66B266")
+    axes_ts[ii + 1].set_ylim((-10, 1100))
+    # axes_ts[ii + 1].set_ylabel("W/m${}^2$")
+    # axes_ts[ii + 1].set_title(titles_list[ii_data][0])
+    axes_ts[ii + 1].xaxis.set_major_locator(locator)
+    axes_ts[ii + 1].xaxis.set_major_formatter(formatter)
+    axes_ts[ii + 1].legend(fontsize="small", ncol=2,
+                           labelspacing=0.3, borderpad=0.1, handlelength=1.0,
+                           handletextpad=0.2,
+                           borderaxespad=0.1)
+
+    # ==============================================================================================================
+    data_time_series = pivoted_series_sampled[ii_data].drop(columns=["CSI_day"])
+    x_lims = mdates.date2num([pd.to_datetime(2021 * 1000 + data_time_series.index[0], format='%Y%j'),
+                              pd.to_datetime(2021 * 1000 + data_time_series.index[-1], format='%Y%j')])
+    y_lims = mdates.date2num([x_axis[0], x_axis[-1] + pd.Timedelta(minutes=9)])
+
+    Z = data_time_series.values
+    z_min, z_max = 0, 1000
+    b = axes_hm[ii_data].imshow(Z.T, cmap=plt.cm.get_cmap('plasma'), vmin=z_min, vmax=z_max, aspect='auto',
+                         extent=[x_lims[0], x_lims[1], y_lims[0], y_lims[1]])
+    cbar_1 = plt.colorbar(b, ax=axes_hm[ii_data])
+    cbar_1.ax.set_ylabel('Global Irradiance\nW/m${}^2$')
+    axes_hm[ii_data].set_title(titles_list[ii_data][1])
+    axes_hm[ii_data].set_ylabel("Time of day")
+    axes_hm[ii_data].xaxis_date()
+    axes_hm[ii_data].xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+    axes_hm[ii_data].yaxis_date()
+    axes_hm[ii_data].yaxis.set_major_formatter(mdates.DateFormatter('%H'))
+
+    if ii_data == 3:
+        # axes_hm[ii_data].legend(loc="upper right", labelspacing=0.3)
+        axes_hm[ii_data].set_xlabel("Time of day")
+        axes_hm[ii_data].set_xlabel("Month of year")
+        axes_ts[ii + 1].set_xlabel("Day of the month")
+plt.savefig('figures/solar_model_proposal/generative_profiles.pdf', bbox_inches='tight')
 
 #%% Surface plotPlot original data with the clear index
 irr_solar_model = pivot_dataframe(data_aligned_sliced[["ghi_haurwitz"]])
