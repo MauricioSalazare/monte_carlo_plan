@@ -88,8 +88,10 @@ class Grid:
         # build Ybus
         Ybus = Cf.T * Yf + Ct.T * Yt  # Full Ybus
 
+        self._Ybus = Ybus
+
         self.Yss = csr_matrix(Ybus[sl[0] - 1, sl[0] - 1], shape=(len(sl), len(sl)))
-        self.Ysd = Ybus[0, 1:]
+        self.Ysd = Ybus[0, 1:]  # TODO: Here assume the slack is the first one?
         self.Yds = self.Ysd.T
         self.Ydd = Ybus[1:, 1:]
 
@@ -124,19 +126,28 @@ class Grid:
         self.S_nom = (active_power_pu + 1j * reactive_power_pu).reshape(-1, ).tolist()
         self.B = csc_matrix(np.diag(np.multiply(self.alpha_Z, np.conj(self.S_nom))) + self.Ydd)  # Constant
         self.C = csr_matrix(self.Yds +
-                            (np.multiply(self.alpha_I, np.conj(self.S_nom))).reshape(self.nb - 1, 1))  # Constant
+                            np.multiply(self.alpha_I, np.conj(self.S_nom)).reshape(self.nb - 1, 1))  # Constant
         self.B_inv = inv(self.B)
+
+
+        # =====================================================================
+        # Added by me
+        self._W = -self.B_inv @ self.C
+        self._F = -self.B_inv @ np.diag(np.multiply(self.alpha_P, np.conj(self.S_nom)))
+
+
+        # =====================================================================
 
         iteration = 0
         tol = np.inf
         start = perf_counter()
         while (iteration < iterations) & (tol >= tolerance):
-            v = self._solve_sam()
+            v = self._solve_sam_v2()
             tol = max(abs(abs(v) - abs(self.v_0)))
             self.v_0 = v  # Voltage at load buses
             iteration += 1
-        # print(f"Time: {perf_counter() - start} seconds.")
-        # print(f"Iterations: {iteration - 1}")
+        print(f"Time: {perf_counter() - start} seconds.")
+        print(f"Iterations: {iteration - 1}")
 
         return self.v_0  # Solution of voltage in complex numbers
 
@@ -145,7 +156,27 @@ class Grid:
         D = csr_matrix(
             (np.multiply(np.multiply(2, self.alpha_P), 1. / np.conj(self.v_0)) * np.conj(self.S_nom)).reshape(-1, 1)
         )
+
         V = self.B_inv @ (A @ np.conj(self.v_0[:, np.newaxis]) - self.C - D)
+
+        return np.array(V.real + 1j * V.imag).flatten()
+
+
+    def _solve_sam_v2(self) -> np.ndarray:
+        # A = csr_matrix(np.diag(np.multiply(self.alpha_P, 1. / np.conj(self.v_0) ** 2) * np.conj(self.S_nom)))
+        # D = csr_matrix(
+        #     (np.multiply(np.multiply(2, self.alpha_P), 1. / np.conj(self.v_0)) * np.conj(self.S_nom)).reshape(-1, 1)
+        # )
+
+        # assert np.allclose(A @ np.conj(self.v_0[:, np.newaxis]), D.todense()/2)
+        V = self._W + (self._F @ (1. / np.conj(self.v_0))[:, np.newaxis])
+        # V_mine2 = self.B_inv @ (-self.C - D/2)
+
+        # V_old = self.B_inv @ (A @ np.conj(self.v_0[:, np.newaxis]) - self.C - D)
+
+        # assert np.allclose(V_old, self.B_inv @ (-self.C - D / 2).todense())
+        # assert np.allclose(V, V_old)
+
 
         return np.array(V.real + 1j * V.imag).flatten()
 

@@ -27,5 +27,6 @@ dependencies:
   - scikit-image==0.18.3  # For the ternary plot in plotly
   - pvlib-python==0.9.0
   - pot == 0.8.1
+  - ffmpeg  # For the animation
 #  - awscli==1.22.21  # For the HPC in Amazon EC2
 #  - aws-parallelcluster==2.11.3  # For the HPC in Amazon EC2

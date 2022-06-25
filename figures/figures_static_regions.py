@@ -16,6 +16,7 @@ import itertools
 import matplotlib.ticker as ticker
 import pandas as pd
 import pickle
+import plotly.express as px
 set_figure_art()
 # mpl.rc('text', usetex=False)
 
@@ -32,13 +33,15 @@ def load_solutions(file_name_solutions):
     return solutions
 
 
-def get_worst_max_scenario(solutions_dict,
-                           quantile,
-                           worst_irradiance_mixture,
+def get_worst_max_scenario(solutions_dict: dict,
+                           quantile: str,
+                           worst_irradiance_mixture: Tuple,
                            pv_growth_percentiles,
                            load_growth_percentiles,
                            offset,
                            voltage_cut_level):
+
+    # Retrieve data of the worst scenario
     list_matrices = get_matrices_critical_quantiles(quantile,
                                                     all_mixtures_irradiance_only=[worst_irradiance_mixture],
                                                     solutions_dict=solutions_dict[quantile],
@@ -68,6 +71,44 @@ def get_worst_max_scenario(solutions_dict,
         ynew[:] = np.nan
 
     plt.close(figx)
+
+    return ynew
+
+
+
+def get_worst_max_scenario_v2(solutions_dict: dict,
+                           quantile: str,
+                           all_tuple_things: list,
+                           pv_growth_percentiles,
+                           load_growth_percentiles,
+                           offset,
+                           voltage_cut_level):
+
+    # Retrieve data of the worst scenario
+    list_matrices = get_matrices_critical_quantiles(quantile,
+                                                    all_mixtures_irradiance_only=all_tuple_things,
+                                                    solutions_dict=solutions_dict[quantile],
+                                                    pv_growth_percentiles=pv_growth_percentiles,
+                                                    load_growth_percentiles=load_growth_percentiles,
+                                                    process_max=True,
+                                                    OFFSET=offset)
+
+    figx, ax = plt.subplots(1, 1, figsize=(5, 5))
+    _,_,_,y_data = plot_contour_levels_irradiance_days(list_matrices=list_matrices,
+                                                        contour_level=voltage_cut_level,
+                                                        # linecolor_contour="grey",
+                                                        linecolor_contour="r",
+                                                        linecolor_quantile="r",
+                                                        pv_growth_percentiles=pv_growth_percentiles,
+                                                        load_growth_percentiles=load_growth_percentiles,
+                                                        # contour_linewidths=0.08,
+                                                        contour_linewidths=1.00,
+                                                        alpha_line_contour=0.4,
+                                                        ax=ax,
+                                                        plot_quantiles=False)
+    plt.close(figx)
+
+    ynew = np.nanmin(y_data["y_cases"], axis=0)
 
     return ynew
 
@@ -242,10 +283,22 @@ def plot_contour_levels_irradiance_days(list_matrices,
                             linewidths=contour_linewidths)
             p = cs.collections[0].get_paths()[0]
             v = p.vertices
+
+
+
             x_ = v[:, 0]
             y_ = v[:, 1]
+
+            if len(x_) == 1:
+                continue
+
             f = interpolate.interp1d(x_, y_, fill_value='extrapolate')
             ynew = f(pv_growth_percentiles)
+
+        except ValueError:
+            print("Interpolation error")
+            ynew = np.empty(len(pv_growth_percentiles))
+            ynew[:] = np.nan
 
         except UserWarning:
             print("No contour warning")
@@ -338,7 +391,19 @@ solutions_dictx_new = get_solutions_dictionary(path_file_parent, quantiles=criti
 
 # Re-arrange dictionary, so the code in the first figure can work
 cases_combinations = list(set(solutions_dictx_new["50"].keys()))
-cases_combinations_irradiance_only_tuples = list(set([irradiance_mixture for irradiance_mixture, _, _ in cases_combinations]))
+cases_combinations_irradiance_only_tuples_ = list(set([irradiance_mixture for irradiance_mixture, _, _ in cases_combinations]))
+outlier_set = {(0.0, 0.0, 1.0),
+               (0.0, 0.1, 0.9),
+               (0.1, 0.0, 0.9),
+               (0.1, 0.2, 0.7),
+               (0.4, 0.0, 0.6),
+               (0.0, 0.2, 0.8),
+               (0.2, 0.0, 0.8),
+               (0.2, 0.1, 0.7),
+               (0.1, 0.1, 0.8),
+               (0.4, 0.4, 0.2),
+               (0.7, 0.1, 0.2)}
+cases_combinations_irradiance_only_tuples = list(set(cases_combinations_irradiance_only_tuples_) - outlier_set)
 solutions_dict = {}
 for mixture_comb in cases_combinations:
     solutions_dict[mixture_comb] = {}
@@ -355,7 +420,7 @@ MIN_QUANTILE_HIGHLIGHT = "05"
 mixture_cases_plot = [(0.4, 0.0, 0.6),
                       (0.2, 0.6, 0.2),  # Normal case (Original)
                       # (0.3, 0.3, 0.4),
-                      (0.0, 1.0, 0.0)]
+                      (0.2, 0.8, 0.0)]
 
 list_matrices_plot = []
 list_of_tuple_cases = []
@@ -368,6 +433,8 @@ for mixture_case in mixture_cases_plot:
             matrix_voltages[i, j] = np.max(solutions_dict[case]["max_q_" + QUANTILE])  # Profile max
     list_matrices_plot.append(matrix_voltages.copy())
 warnings.filterwarnings("default")
+
+#%%
 
 # =====================================================================================================================
 # FIGURE 1: Heat map with one contour plot and quantiles of daily voltage profile
@@ -625,32 +692,32 @@ plt.savefig('static_regions/static_region_border.pdf', dpi=700, bbox_inches='tig
 # FIGURE 2: Static operating zones
 # =====================================================================================================================
 
-
-
 critical_quantile_max = ["75", "80", "85", "90", "95", "975", "98", "99", "100"]
 voltages_levels= {"danger": max_technical_voltage_danger,
                   "caution": max_technical_voltage_caution}
 solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_quantile_max)
 
+
+# warnings.filterwarnings("default")
 border_limit_region = {}
 for keys_ in voltages_levels:
     max_technical_voltage = voltages_levels[keys_]
     border_danger = {}
     for quantile_max in critical_quantile_max:
-        worst_line = get_worst_max_scenario(solutions_dict=solutions_dictx,
-                                            quantile=quantile_max,
-                                            worst_irradiance_mixture=(0.0, 1.0, 0.0),
-                                            pv_growth_percentiles=x,
-                                            load_growth_percentiles=y,
-                                            voltage_cut_level=max_technical_voltage,
-                                            offset=OFFSET)
+        worst_line = get_worst_max_scenario_v2(solutions_dict=solutions_dictx,
+                                               quantile=quantile_max,
+                                               all_tuple_things=cases_combinations_irradiance_only_tuples,
+                                               pv_growth_percentiles=x,
+                                               load_growth_percentiles=y,
+                                               voltage_cut_level=max_technical_voltage,
+                                               offset=OFFSET)
         border_danger[quantile_max] = worst_line
 
     border_limit_region[keys_] = border_danger
 
 # max_technical_voltage_danger = 1.04
 warnings.filterwarnings("error")
-critical_quantile_max = ["95", "90", "99"]
+critical_quantile_max = ["100", "75", "99"]
 critical_quantile_min = ["05", "10", "05"]
 titles_list = ["(a)", "(b)", "(c)"]
 min_quant_span = [0.9114, 0.909, 0.86]  # This is calculated zooming into the figure and see the vertical contours
@@ -733,6 +800,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
 
     else:
         quant_to_process_min = critical_quantile_min[ii]
+        # MINIMUM contour plots
         list_matrices = get_matrices_critical_quantiles(quant_to_process_min,
                                                         all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
                                                         solutions_dict=solutions_dictx[quant_to_process_min],
@@ -752,6 +820,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                                                               plot_quantiles=False
                                                                               )
 
+        # MAXIMUM contour plots
         quant_to_process_max = critical_quantile_max[ii]
         list_matrices = get_matrices_critical_quantiles(quant_to_process_max,
                                                         all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
@@ -760,18 +829,8 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                                         load_growth_percentiles=y,
                                                         process_max=True,
                                                         OFFSET=OFFSET)
-        plot_contour_levels_irradiance_days(list_matrices,
-                                            contour_level=max_technical_voltage_danger,
-                                            # linecolor_contour="grey",
-                                            linecolor_contour="r",
-                                            linecolor_quantile="r",
-                                            pv_growth_percentiles=x,
-                                            load_growth_percentiles=y,
-                                            contour_linewidths=0.08,
-                                            alpha_line_contour=0.4,
-                                            ax=ax,
-                                            plot_quantiles=False)
 
+        # Caution
         plot_contour_levels_irradiance_days(list_matrices,
                                             contour_level=max_technical_voltage_caution,
                                             # linecolor_contour="grey",
@@ -779,10 +838,26 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                                             linecolor_quantile="#FFA500",
                                             pv_growth_percentiles=x,
                                             load_growth_percentiles=y,
-                                            contour_linewidths=0.08,
+                                            contour_linewidths=1.00,
                                             alpha_line_contour=0.4,
                                             ax=ax,
                                             plot_quantiles=False)
+
+        # Danger contour lines
+        plot_contour_levels_irradiance_days(list_matrices,
+                                            contour_level=max_technical_voltage_danger,
+                                            # linecolor_contour="grey",
+                                            linecolor_contour="r",
+                                            linecolor_quantile="r",
+                                            pv_growth_percentiles=x,
+                                            load_growth_percentiles=y,
+                                            # contour_linewidths=0.08,
+                                            contour_linewidths=1.00,
+                                            alpha_line_contour=0.4,
+                                            ax=ax,
+                                            plot_quantiles=False)
+
+
 
         ax.plot(x, border_limit_region["danger"]["100"], color="purple", linewidth=1.5, label=r"$\overline{V}:$" + r" 0\% Risk", zorder=3)
         ax.plot(x, border_limit_region["danger"][quant_to_process_max], color="r", linewidth=1.0, alpha=1.0,
@@ -1103,3 +1178,65 @@ plt.savefig('static_regions/static_contour_for_ternary.pdf', dpi=700, bbox_inche
 # # plt.style.use("seaborn-white")
 # plt.style.use("../../probnum.mplstyle")
 
+
+#%%
+critical_quantiles = ["05", "10", "15", "25", "50", "75", "80", "85", "90", "95", "975","98","99","100"]
+solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_quantiles)
+
+outlier_set = {(0.0, 0.0, 1.0),
+               (0.0, 0.1, 0.9),
+               (0.1, 0.0, 0.9),
+               (0.1, 0.2, 0.7),
+               (0.4, 0.0, 0.6),
+               (0.0, 0.2, 0.8),
+               (0.2, 0.0, 0.8),
+               (0.2, 0.1, 0.7),
+               (0.1, 0.1, 0.8),
+               (0.4, 0.4, 0.2),
+               (0.7, 0.1, 0.2)}
+cases_combinations_irradiance_only_tuples_ = list(set([irradiance_mixture for irradiance_mixture, _, _ in cases_combinations]))
+cases_combinations_irradiance_only_tuples = list(set(cases_combinations_irradiance_only_tuples_) - outlier_set)
+
+
+CUANTILE = "100"
+fig, ax = plt.subplots(1,1, figsize=(5,5))
+list_matrices = get_matrices_critical_quantiles(CUANTILE,
+                                                all_mixtures_irradiance_only=cases_combinations_irradiance_only_tuples,
+                                                solutions_dict=solutions_dictx[CUANTILE],
+                                                pv_growth_percentiles=x,
+                                                load_growth_percentiles=y,
+                                                process_max=True,
+                                                OFFSET=OFFSET)
+_, _, _, y_data = plot_contour_levels_irradiance_days(list_matrices,
+                                                      contour_level=1.05,
+                                                      ax=ax,
+                                                      alpha_line_contour=0.2,
+                                                      pv_growth_percentiles=x,
+                                                      load_growth_percentiles=y,
+                                                      linecolor_contour="b",
+                                                      linecolor_quantile="b",
+                                                      alpha_line_quantile=0.0,
+                                                      plot_quantiles=False
+                                                      )
+
+# Build frame
+data_to_plotly = []
+for ii in range(len(cases_combinations_irradiance_only_tuples)):
+    data_to_plotly.append(pd.DataFrame(dict(x_values=x,
+                          y_values=y_data["y_cases"][ii],
+                          case_irr_mix=[cases_combinations_irradiance_only_tuples[ii]]*len(x))))
+# Attach the worst ever
+data_to_plotly.append(pd.DataFrame(dict(x_values=x,
+                                          y_values=np.min(y_data["y_cases"], axis=0),
+                                          case_irr_mix=["worst"]*len(x))))
+
+data_to_plotly = pd.concat(data_to_plotly, axis=0, ignore_index=True)
+# pd.concat(data_to_plotly, axis=0, ignore_index=True).to_csv("static_regions/frontiers.csv", index=False)
+
+# ===============================
+# import pandas as pd
+
+
+# data = pd.read_csv("static_regions/frontiers.csv")
+fig = px.line(data_to_plotly, x='x_values', y='y_values', color='case_irr_mix', symbol="case_irr_mix", width=800, height=800)
+fig.write_html('static_regions/frontiers.html', auto_open=True)
