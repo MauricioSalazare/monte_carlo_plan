@@ -28,7 +28,7 @@ def sampling_by_annual_energy(copula_model: EllipticalCopula,
             If there the value is None, then the number of days to be sampled comes from the original data.
             E.g. if the original data set has 10 days of annual energ 0.134 [GWh], then the final frame will also have
             10 days.
-        add_uid: bool: True if add a column of unique number identifier for the transformer
+        add_uid: bool: True if add a column of unique number identifier for the meter
         add_day_id": bool: True if add a column with a day number identifier.
 
     Return:
@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # create_syntethic_profiles(copula_models, 0, 10, add_uuid=True, add_day_id=True)
 
-    n_days_per_transformer = 730
+    n_days_per_transformer = 730  # 2 years of data (365 * 2)
     np.random.seed(12)
     n_cores = mp.cpu_count() - 1
     star_input = [(copula_models, 0, n_days_per_transformer),
@@ -144,23 +144,24 @@ if __name__ == "__main__":
     samples_ = samples_by_cluster.drop(columns="cluster").copy()
 
     #%%
-    # Process to pivot the data
+    # Process to pivot the data in melted presentation.
     ID = 150
+    N_METERS = 33
     meters_data = []
 
     filter_dict = [{"regex": "_ap$"}, {"regex": "_rp$"}, "", ""]
     suffix = ["ap", "rp"]
+    j = 0  # Only active power
 
-    add_date_time_column = False
+    add_date_time_column = True
 
-    if add_date_time_column:
-        x_axis = pd.date_range(start="2021-01-01", periods=48, freq="30T").strftime("%H:%M:%S")
-        time_stamp_format = [f"q_{i}_{suffix[j]}" for i in range(1, 48 + 1)]
-        dict_time_stamp_format = dict(zip(time_stamp_format, x_axis))
+    x_axis = pd.date_range(start="2021-01-01", periods=48, freq="30T").strftime("%H:%M:%S")  # Remove year
+    time_stamp_format = [f"q_{i}_{suffix[j]}" for i in range(1, 48 + 1)]
+    dict_time_stamp_format = dict(zip(time_stamp_format, x_axis))
 
-    j=0
+
     meter_ids = samples_["meter_uid"].unique()
-    for ID in trange(157-10, 157):
+    for ID in trange(157-N_METERS, 157):
         idx_meter = samples_["meter_uid"] == meter_ids[ID]
         meter_data = samples_[idx_meter]
         ap_data_meter = meter_data.filter(**filter_dict[j])
@@ -176,31 +177,32 @@ if __name__ == "__main__":
             meter_data_ap_melted["date"] = meter_data_ap_melted["day_id"].apply(lambda x: start_date +
                                                                                           datetime.timedelta(days=x))
             meter_data_ap_melted["date_time"] = meter_data_ap_melted["date"].astype(str) + " " + meter_data_ap_melted["time_stamp"]
-            meter_data_ap_melted["date_time"] = pd.to_datetime(meter_data_ap_melted["date_time"])  # Todo: This is extremely slow
+            meter_data_ap_melted["date_time"] = pd.to_datetime(meter_data_ap_melted["date_time"])  # Todo: This is extremely slow improve with dictionary mapping
             meter_data_ap_melted = meter_data_ap_melted[["date_time", "value"]].copy()
 
         meter_data_ap_melted["meter_uid"] = meter_ids[ID]
         meters_data.append(meter_data_ap_melted)
     meters_data_all_melted = pd.concat(meters_data, axis=0, ignore_index=True)
-
-
-    #%%
     active_power = meters_data_all_melted.copy()
-    #%%
-    if add_date_time_column:
-        fig, ax = plt.subplots(2, 1, figsize=(20, 10))
-        sns.lineplot(data=active_power, x="date_time", y="value",  hue="meter_uid", legend= False)
 
     #%% Unmelt by day_id
-    unique_days = meters_data_all_melted["day_id"].unique()
+    if "day_id" in active_power.columns:
+        unique_days = active_power["day_id"].unique()
+        meter_data_pivoted = []
+        for day_ in tqdm(unique_days, desc="Pivoting time series"):
+            idx = meters_data_all_melted["day_id"] == day_
+            filtered_meters = meters_data_all_melted[idx]
+            meters_pivoted = filtered_meters.pivot(index='time_stamp', columns='meter_uid', values="value")
+            meter_data_pivoted.append(meters_pivoted)
 
-    for day_ in unique_days:
-        idx = meters_data_all_melted["day_id"] == day_
-        filtered_meters = meters_data_all_melted[idx].copy()
-        # filtered_meters.drop(columns="day_id", inplace=True)
-        meters_pivoted = filtered_meters.pivot(index='time_stamp', columns='meter_uid', values="value")
-
-
+        meter_data_pivoted_frame = pd.concat(meter_data_pivoted, axis=0)
+        meter_data_pivoted_frame.reset_index(drop=True, inplace=True)
+    else:
+        meter_data_pivoted_frame = active_power.pivot(index='date_time', columns='meter_uid', values="value")
+    meter_data_pivoted_frame.round(3).to_csv("active_power_example.csv")
+    #%%
+    fig, ax = plt.subplots(1, 1, figsize=(20, 10))
+    meter_data_pivoted_frame.plot(ax=ax, legend=False)
 
 
 

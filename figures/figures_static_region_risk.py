@@ -1,3 +1,8 @@
+# ===================================
+# Generates the following figures:
+# Fig 9. Regions for different risk levels
+# ===================================
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.dates as mdates
@@ -266,7 +271,7 @@ y = np.linspace(0, 1.0, 11).round(1)
 
 #%%
 # =====================================================================================================================
-# FIGURE 2: Static operating zones
+# FIGURE 2: Static operating Regions
 # =====================================================================================================================
 critical_quantile_max = ["75", "80", "85", "90", "95", "975", "98", "99", "100"]
 voltages_levels= {"danger": max_technical_voltage_danger,
@@ -305,7 +310,7 @@ solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_
 set_figure_art(fontsize=8)
 perc_offset_y = [0.7, 0.82, 0.85]
 fig, ax_t = plt.subplots(1, 3, figsize=(7, 2.8))
-plt.subplots_adjust(left=0.08, right=0.95, top=0.86, bottom=0.3, wspace=0.35)
+plt.subplots_adjust(left=0.1, right=0.95, top=0.86, bottom=0.3, wspace=0.35)
 
 # Iterate through columns
 for ii, ax in enumerate(ax_t):  # Iterate through columns
@@ -389,11 +394,11 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
 
 
     ax.text(x=loading_value_plot, y=lambda_risk_0 * perc_offset_y[ii],
-            s=r"$\lambda_{"+ f"{loading_value_plot}" + r"}^{" + f"{100 - int(quant_to_process_max)}" + r"\%}$",
+            s=r"$\lambda_{"+ f"{int(loading_value_plot * 100)}" + r"\%" + r"}^{" + f"{100 - int(quant_to_process_max)}" + r"\%}$",
             ha="center", va="center", fontsize=10, color="#660000")
     if ii != 0:
-        ax.text(x=loading_value_plot + 0.13, y=lambda_0_risk_0,
-                s=r"$\lambda_{" + f"{loading_value_plot}" + r"}^{0\%}$",
+        ax.text(x=loading_value_plot + 0.13, y=lambda_0_risk_0 * 0.90,
+                s=r"$\lambda_{" + f"{int(loading_value_plot * 100)}" + r"\%" + r"}^{0\%}$",
                 ha="center", va="center", fontsize=10, color="purple")
 
     # Load 2
@@ -405,12 +410,12 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
     ax.scatter([loading_value_plot], [lambda_0_risk_1], s=18, color="purple", zorder=3)
 
     ax.text(x=loading_value_plot, y=lambda_risk_1 * perc_offset_y[ii],
-            s=r"$\lambda_{" + f"{loading_value_plot}" + r"}^{" + f"{100 - int(quant_to_process_max)}" + r"\%}$",
+            s=r"$\lambda_{" + f"{int(loading_value_plot * 100)}" + r"\%" + r"}^{" + f"{100 - int(quant_to_process_max)}" + r"\%}$",
             ha="center", va="center", fontsize=10, color="#660000")
 
     if ii != 0:
-        ax.text(x=loading_value_plot + 0.13, y=lambda_0_risk_1,
-                s=r"$\lambda_{" + f"{loading_value_plot}" + r"}^{0\%}$",
+        ax.text(x=loading_value_plot + 0.13, y=lambda_0_risk_1 * 0.90,
+                s=r"$\lambda_{" + f"{int(loading_value_plot * 100)}" + r"\%" + r"}^{0\%}$",
                 ha="center", va="center", fontsize=10, color="purple")
 
     ax.fill_between(x, 0, border_limit_region["caution"][quant_to_process_max], color="green", alpha=0.3, zorder=0, label="Safe")
@@ -437,8 +442,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
     ax.grid()
     ax.set_xlim((0, 1))
     ax.set_ylim((0, 1))
-    ax.set_xlabel("Load Growth", fontsize="large")
-    ax.set_ylabel("PV Growth", fontsize="large")
+
     ax.set_title(titles_list[ii] + "\n" + f"Risk {100 - int(quant_to_process_max)}" + r"\%", fontsize="x-large")
     ax.grid(which="both", linestyle=":")
 
@@ -449,6 +453,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                              loc="upper left")
 
     if ii==0:
+        ax.set_ylabel("PV installed\n" + r"capacity growth [\%]", fontsize="large")
         ax.add_artist(first_legend)
         ax.legend(lh_regions,
                   ll_regions,
@@ -456,20 +461,32 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                   bbox_to_anchor=(0.45, -0.18),
                   loc="upper left",
                   ncol=4,
-                  title="Static Operating Zones:",
+                  title="Static Operating Regions:",
                   title_fontsize="large",
                   handlelength=1.5)
+
+    if ii == 1:
+        ax.set_xlabel("Annual energy" + r" consumption growth [\%]", fontsize="large")
+
+    # Set the axis in percentages
+    valsy = ax.get_yticks()
+    ax.yaxis.set_major_locator(ticker.FixedLocator(valsy))
+    ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+    valsx = ax.get_xticks()
+    ax.xaxis.set_major_locator(ticker.FixedLocator(valsx))
+    ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
 
 plt.savefig('static_regions/static_contour_plots.pdf', dpi=700, bbox_inches='tight')
 
 #%%
 # =====================================================================================================================
-# FIGURE 1: Static operating zones
+# FIGURE 1: Static operating Regions
 # =====================================================================================================================
 
 set_figure_art(fontsize=8)
 fig, ax = plt.subplots(1, 1, figsize=(3, 3))
-plt.subplots_adjust(top=0.95, right=0.95, left=0.15, bottom=0.1)
+plt.subplots_adjust(top=0.95, right=0.95, left=0.2, bottom=0.1)
 # plt.tight_layout()
 loading_levels = x
 # risk_mapping = {"75": 0.25, "80": 0.2, "85": 0.15, "90": 0.1, "95": 0.05, "98": 0.02, "99": 0.01, "100": 0.0}
@@ -499,7 +516,7 @@ for loading_value, sign_ in zip(pvhc_loading_values, [-0.05, -0.05, 0.05, 0.05, 
             "-o",
             fillstyle='none',
             color=the_color,
-            label=r"$\lambda_{" + f"{loading_value}" + r"}$")
+            label=r"$\lambda_{" + f"{int(loading_value * 100)}" + r"\%" + r"}$")
 
     idx_loading_10 = np.where(np.isclose(risks_x_axis, 10))[0][0]
     idx_loading_5 = np.where(np.isclose(risks_x_axis, 5))[0][0]
@@ -510,30 +527,51 @@ for loading_value, sign_ in zip(pvhc_loading_values, [-0.05, -0.05, 0.05, 0.05, 
     pvhc_y_0 = pvhc_loading_values[loading_value]["pvhc"][idx_loading_0]
 
     ax.text(x=10 , y=pvhc_y_10 + sign_,
-            s=r"$\lambda_{" + f"{loading_value}" + r"}^{" + f"{int(10)}" + r"\%}$",
+            s=r"$\lambda_{" + f"{int(loading_value * 100)}" + r"\%" + r"}^{" + f"{int(10)}" + r"\%}$",
             ha="center", va="center", fontsize=9, color=the_color)
 
     ax.text(x=5 , y=pvhc_y_5 + sign_,
-            s=r"$\lambda_{" + f"{loading_value}" + r"}^{" + f"{int(5)}" + r"\%}$",
+            s=r"$\lambda_{" + f"{int(loading_value * 100)}" + r"\%" + r"}^{" + f"{int(5)}" + r"\%}$",
             ha="center", va="center", fontsize=9, color=the_color)
 
     ax.text(x=-1, y=pvhc_y_0 + sign_,
-            s=r"$\lambda_{" + f"{loading_value}" + r"}^{" + f"{int(0)}" + r"\%}$",
+            s=r"$\lambda_{" + f"{int(loading_value * 100)}" + r"\%" + r"}^{" + f"{int(0)}" + r"\%}$",
             ha="center", va="center", fontsize=9, color=the_color)
 
-ax.set_ylim((0.0, 1.0))
+ax.set_ylim((0.0, 1.06))
 ax.set_xlim((-3.5, 16))
 ax.set_xlabel("Risk")
-ax.set_ylabel("PV Growth")
+ax.set_ylabel("PV installed capacity growth")
 
 ax.xaxis.set_major_locator(ticker.MultipleLocator(5))
 ax.xaxis.set_minor_locator(ticker.MultipleLocator(1))
 ax.xaxis.set_major_formatter(ticker.PercentFormatter(decimals=0))
+
+ax.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
+ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0))
+
+# # Set the y-axis in percentages
+# valsy = ax.get_yticks()
+# ax.yaxis.set_major_locator(ticker.FixedLocator(valsy))
+# ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+
 ax.grid("both")
-ax.legend(loc="upper left",
+ax.legend(loc="upper center",
           fontsize="medium",
-          title="Load growth",
+          title="Annual energy consumption growth",
+          ncol=3,
           handlelength=1.5, labelspacing=0.2, borderaxespad=0.1)
 plt.savefig('static_regions/risk_plots.pdf', dpi=700, bbox_inches='tight')
 # ax.set_title(titles_list[ii] + "\n" + "Installed PV capacity", fontsize="x-large")
+
+#%% Table
+empty_dict = []
+
+for aa in pvhc_loading_values.values():
+    empty_dict.append(aa["pvhc"])
+
+bb = pd.DataFrame(empty_dict, columns=pvhc_loading_values[0.0]["risks"], index=list(pvhc_loading_values.keys()))
+
 

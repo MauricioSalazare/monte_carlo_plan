@@ -1,9 +1,14 @@
+# ===================================
+# Generates the following figures:
+# Fig 8. Heat maps with the contour lines, inset plots with the maximum and minimum voltage profiles
+# Fig 11. Regions of the ternary plot
+# ===================================
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as patches
-import matplotlib.ticker as ticker
 from matplotlib.lines import Line2D
 import warnings
 from pathlib import Path
@@ -420,7 +425,7 @@ MIN_QUANTILE_HIGHLIGHT = "05"
 mixture_cases_plot = [(0.4, 0.0, 0.6),
                       (0.2, 0.6, 0.2),  # Normal case (Original)
                       # (0.3, 0.3, 0.4),
-                      (0.2, 0.8, 0.0)]
+                      (0.0, 1.0, 0.0)]
 
 list_matrices_plot = []
 list_of_tuple_cases = []
@@ -435,7 +440,329 @@ for mixture_case in mixture_cases_plot:
 warnings.filterwarnings("default")
 
 #%%
+# =====================================================================================================================
+# FIGURE 1 (ver 2): Heat map with one contour plot and quantiles of daily voltage profile
+# =====================================================================================================================
+x_axis = pd.date_range(start="2021-11-01", periods=48, freq="30T")
 
+ax_ = np.empty((3, 5), dtype=object)
+fig = plt.figure(figsize=(7.3*2, 3.8*2))
+gs0 = gridspec.GridSpec(1, 2, figure=fig, wspace=0.15, hspace=0.08, left=0.05, bottom=0.11, right=0.98, top=0.94,
+                        height_ratios=[1], width_ratios=[1, 4])  # Two columns to hold the different plots
+gs00 = gs0[0].subgridspec(3, 1, hspace=0.35)  # Colormap
+gs01 = gs0[1].subgridspec(3, 4, wspace=0.45, hspace=0.55)  # Voltage profiles
+
+for ii in range(3):
+    ax_[ii, 0] = fig.add_subplot(gs00[ii])
+
+kk = 0
+for ii in range(3):
+    for jj in range(4):
+        ax_[ii, jj + 1] = fig.add_subplot(gs01[kk])
+        kk += 1
+
+ax_0_column = ax_[:, 0].flatten()
+ax_1_column = ax_[:, 1].flatten()
+ax_2_column = ax_[:, 2].flatten()
+ax_3_column = ax_[:, 3].flatten()
+ax_4_column = ax_[:, 4].flatten()
+
+
+# Combinations of load and pv that lies in the contour line
+special_load_pv_comb = [(0.5, 0.5),
+                        (0.5, 0.4),
+                        (0.8, 0.6)]
+
+special_load_pv_comb = [(0.3, 0.5),
+                        (0.3, 0.5),
+                        (0.3, 0.5)]
+
+special_rectangles = [] # (x0, y0) cooridnates of the purple boxes
+for (special_load, special_pv) in special_load_pv_comb:
+    special_rectangles.append((np.round(special_load - 0.05, 3),
+                               np.round(special_pv - 0.05, 3)))
+
+min_voltage_cbar, max_voltage_cbar = 0.998, 1.095
+
+
+
+# titles_list = ["(a)", "(b)", "(c)", "(d)", "(e)", "(f)", "(g)", "(h)", "(i)", "(j)", "(k)", "(l)", "(m)", "(n)", "(o)"]
+
+titles_array = np.array([["(a)", "(b)", "(c)", "(d)", "(e)"],
+                         ["(f)", "(g)", "(h)", "(i)", "(j)"],
+                         ["(k)", "(l)", "(m)", "(n)", "(o)"]])
+
+
+norm_individual = mpl.colors.Normalize(vmin=min_voltage_cbar, vmax=max_voltage_cbar)
+
+# Create a legend that it will be showed in the heat map
+lines_ = [Line2D([0], [0], color="k", linewidth=1.5, linestyle='-'),
+          Line2D([0], [0], color="k", linewidth=1.5, linestyle='dashed')]
+labels_ = [r"$\overline{V}$",
+           r"$V_{\mathrm{caution}}$"]
+
+# Iteration is through rows
+for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, title_row, mixture_case) in enumerate(zip(ax_0_column,
+                                                                      ax_1_column,
+                                                                      ax_2_column,
+                                                                      ax_3_column,
+                                                                      ax_4_column,
+                                                                      titles_array,
+                                                                      mixture_cases_plot)):
+    # Explanation of the variables
+    # mixture_case = (overcast, sunny, dark)
+    # x, y combination (Load, PV)
+    data_mixture_case = [solutions_dict[(mixture_case, 0.0, 1.0)],
+                         solutions_dict[(mixture_case, 1.0, 0.0)],
+                         solutions_dict[(mixture_case, 0.0, 0.0)],
+                         solutions_dict[(mixture_case, *special_load_pv_comb[ii])]]  # Case over contour line
+
+    coords_max = []
+    coords_min = []
+
+    for data_mixture_ in data_mixture_case:
+        coords_max.append(get_coords_max_values(data_mixture_["max_q_" + QUANTILE]))
+        coords_min.append(get_coords_min_values(data_mixture_["min_q_" + MIN_QUANTILE_HIGHLIGHT]))
+
+    colors_ = ["r", "g", "b", "purple"]
+
+    ax_0.pcolor(x, y, list_matrices_plot[ii], shading='auto', vmin=min_voltage_cbar, vmax=max_voltage_cbar)
+
+    if ii == 2:
+        ax_0.set_xlabel(f"Annual energy" + r" consumption growth [\%]" , fontsize="x-large")
+
+    # if ii == 0:
+    ax_0.set_ylabel("PV installed\n" + r"capacity growth [\%]", fontsize="x-large")
+
+    ax_0.xaxis.set_major_locator(ticker.MultipleLocator(0.2))
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('viridis')), ax=ax_0,
+                        location="right")
+    cbar.ax.set_ylabel("Max. grid voltage mag. [p.u.]", fontsize="x-large")
+
+    for color_, (_, y_max_) in zip(colors_, coords_max):
+        # cbar.ax.vlines(x=y_max_, ymin=0, ymax=10, linewidth=2, color=color_)
+        cbar.ax.hlines(y=y_max_, xmin=0, xmax=10, linewidth=2, color=color_)
+
+    cs1 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_danger], linewidths=1.5,
+                       linestyles="solid")
+    cs2 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_caution], linewidths=1.5,
+                       linestyles="dashed")
+    # cs3 = ax_0.contour(x, y, list_matrices_plot[ii], colors="k", levels=[max_technical_voltage_green], linewidths=1.5,
+    #                    linestyles="dashdot")
+
+    ax_0.clabel(cs1, inline=True, fontsize=7, colors='k')
+    ax_0.clabel(cs2, inline=True, fontsize=7, colors='k')
+    # ax_0.clabel(cs3, inline=True, fontsize=7, colors='k')
+
+    ax_0.set_title(f"{title_row[0]}\n"
+                   r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +  # Cloudy
+                   r"\pi_2=" + f"{mixture_case[1]}" + r"," +  # Sunny
+                   r"\pi_3=" + f"{mixture_case[2]}" + r")$",  # Overcast
+                   fontsize="x-large")
+
+    ax_0.set_aspect(1)
+
+    if ii == 1:
+        ax_0.legend(lines_, labels_, loc="upper center", handlelength=1.5, labelspacing=0.2, borderaxespad=0.1, fontsize="large")
+
+    # WARNING: I changed the order, so it agrees with the clustering of one of the figures in the paper
+    # In the paper the order is (cluster_1 = cloudy, cluster_2=overcast, cluster_3=sunny)
+    # ax_0.set_title(f"{titles_list[ii]}\n"
+    #                r"$(\pi_1=" + f"{mixture_case[0]}" + r"," +
+    #                r"\pi_2=" + f"{mixture_case[2]}" + r"," +
+    #                r"\pi_3=" + f"{mixture_case[1]}" + r")$",
+    #                fontsize="x-large")
+
+    rect_upper_left = patches.Rectangle((-0.05, 0.95), width=0.1, height=0.1, linewidth=2, edgecolor='r',
+                                        facecolor='none', linestyle="-")
+    rect_low_right = patches.Rectangle((0.95, -0.05), width=0.1, height=0.1, linewidth=2, edgecolor='g',
+                                       facecolor='none', linestyle="-")
+    rect_low_left = patches.Rectangle((-0.05, -0.05), width=0.1, height=0.1, linewidth=2, edgecolor='b',
+                                      facecolor='none', linestyle="-")
+    rect_contour = patches.Rectangle(special_rectangles[ii], width=0.1, height=0.1, linewidth=2, edgecolor='purple',
+                                     facecolor='none', linestyle="-")
+    rect_set = [rect_low_left, rect_low_right, rect_upper_left, rect_contour]
+
+    for rect in rect_set:
+        ax_0.add_patch(rect)
+
+    # Change the axis to percentages
+    valsy = ax_0.get_yticks()
+    ax_0.yaxis.set_major_locator(ticker.FixedLocator(valsy))
+    ax_0.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+    valsx = ax_0.get_xticks()
+    ax_0.xaxis.set_major_locator(ticker.FixedLocator(valsx))
+    ax_0.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+    # =================================================================================================================
+    # Lower subplots (Profiles with quantiles)
+    # =================================================================================================================
+
+    ax_row = [ax_1, ax_2, ax_3, ax_4]  # Rows
+
+    for ax_col, color_, data_mixture_, (x_max_, y_max_), (x_min_, y_min_) in zip(ax_row, colors_, data_mixture_case, coords_max, coords_min):
+        plot_quantile_mixture_case(data_mixture_,
+                                   ax=ax_col,
+                                   max_quantile_highlight=QUANTILE,
+                                   min_quantile_highlight=QUANTILE,
+                                   plot_min_voltages=True)
+
+        ax_col.text(x=x_axis[np.ceil(x_max_/2).astype(int)],
+                    y=y_max_ * 1.008,
+                    s=str(round(y_max_, 3)) + " [p.u]", ha="center", va="center", fontsize="large",
+                    color=color_)
+        ax_col.hlines(y=y_max_, xmin=x_axis[0], xmax=x_axis[x_max_], color="k", linewidth=0.8, linestyles="--")
+        # x_right_limit = ax_col.get_xlim()[1]
+
+        ax_col.text(x=x_axis[x_min_-1],
+                    y=y_min_ * (2 - 1.008),
+                    s=str(round(y_min_, 3)) + " [p.u]", ha="center", va="center", fontsize="large",
+                    color=color_)
+        ax_col.hlines(y=y_min_, xmin=x_axis[x_min_], xmax=x_axis[-1], color="k", linewidth=0.8, linestyles="--")
+
+        for spines in ax_col.spines.values():
+            spines.set_color(color_)
+            spines.set_linewidth(1.0)
+
+    ax_1.set_xticklabels(labels=[])
+    ax_2.set_xticklabels(labels=[])
+    ax_3.set_xticklabels(labels=[])
+    ax_4.set_xticklabels(labels=[])
+    # ax_4.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    # ax_4.set_xlim((x_axis[0], x_axis[-1] + pd.Timedelta(minutes=29)))
+
+
+
+
+
+
+    if ii == 2:
+
+        # Plot legend of maximum quantiles
+        lh, ll = ax_1.get_legend_handles_labels()
+        idx_max_values = [ii for ii in np.arange(len(lh)) if ii % 2 == 0]  # Even number
+
+        max_lh = [lh[ii] for ii in idx_max_values]
+        max_ll = [ll[ii] for ii in idx_max_values]
+
+        leg = ax_1.legend(max_lh,
+                          max_ll,
+                          fontsize="large",
+                          bbox_to_anchor=(0.55, -0.22),
+                          loc="upper left",
+                          ncol=4,
+                          title="Max. voltage percentiles",
+                          title_fontsize="large",
+                          handlelength=1.5)
+
+        for legobj in leg.legendHandles:
+            legobj.set_linewidth(2.0)
+
+
+        # Plot legend of minimum quantiles
+
+        lh, ll = ax_4.get_legend_handles_labels()
+        idx_min_values = [ii for ii in np.arange(len(lh)) if ii % 2 == 1]  # Odd number
+
+        min_lh = [lh[ii] for ii in idx_min_values]
+        min_ll = [ll[ii] for ii in idx_min_values]
+
+        leg = ax_4.legend(min_lh,
+                          min_ll,
+                          fontsize="large",
+                          bbox_to_anchor=(-1.05, -0.22),
+                          loc="upper left",
+                          ncol=4,
+                          title="Min. voltage percentiles",
+                          title_fontsize="large",
+                          # handleheight=10,
+                          handlelength=1.5)
+
+        for legobj in leg.legendHandles:
+            legobj.set_linewidth(2.0)
+
+    ax_1.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    ax_2.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    ax_3.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    ax_4.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+
+    ax_1.set_xlabel("Time of day")
+    ax_2.set_xlabel("Time of day")
+    ax_3.set_xlabel("Time of day")
+    ax_4.set_xlabel("Time of day")
+
+    # # Limits to see only maximum voltages correctly:
+    # ax_1.set_ylim((0.99, 1.12))
+    # ax_2.set_ylim((0.98, 1.05))
+    # ax_3.set_ylim((0.98, 1.12))
+    # ax_4.set_ylim((0.98, 1.12))
+
+    # # Limits to see correctly the minimum voltages
+    # ax_1.set_ylim((0.991, 1.01))
+    # ax_2.set_ylim((0.95, 1.01))
+    # ax_3.set_ylim((0.991, 1.01))
+    # ax_4.set_ylim((0.97, 1.01))
+
+    # Limits to see minimum and maximum voltages correctly
+
+    ax_1.set_title(f"{title_row[1]}" + "\n" + r"Energy growth: 0\%" + "\n" + r"PV growth: 100\%", fontsize="large")
+    ax_2.set_title(f"{title_row[2]}" + "\n" + r"Energy growth: 100\%" + "\n" + r"PV growth: 0\%", fontsize="large")
+    ax_3.set_title(f"{title_row[3]}" + "\n" + r"Energy growth: 0\%" + "\n" + r"PV growth: 0\%", fontsize="large")
+    ax_4.set_title(f"{title_row[4]}" + "\n" + r"Energy growth: 50\%" + "\n" + r"PV growth: 50\%", fontsize="large")
+
+    ax_1.set_ylabel(r"Voltage mag. [p.u]")
+    ax_2.set_ylabel(r"Voltage mag. [p.u]")
+    ax_3.set_ylabel(r"Voltage mag. [p.u]")
+    ax_4.set_ylabel(r"Voltage mag. [p.u]")
+
+    ax_1.yaxis.set_ticks(np.arange(0.96, 1.115 + 0.02, 0.02))
+    ax_2.yaxis.set_ticks(np.arange(0.930, 1.032 + 0.01, 0.01))
+    ax_3.yaxis.set_ticks(np.arange(0.970, 1.058 + 0.01, 0.01))
+    ax_4.yaxis.set_ticks(np.arange(0.95, 1.08 + 0.01, 0.01))
+
+    ax_1.set_ylim((0.96, 1.115))
+    ax_2.set_ylim((0.930, 1.032))
+    ax_3.set_ylim((0.970, 1.058))
+    ax_4.set_ylim((0.955, 1.08))
+
+
+
+lh, ll = ax_4.get_legend_handles_labels()
+idx_max_values = [ii for ii in np.arange(len(lh)) if ii % 2 == 0]  # Even number
+idx_min_values = [ii for ii in np.arange(len(lh)) if ii % 2 == 1]  # Odd number
+
+max_lh = [lh[ii] for ii in idx_max_values]
+max_ll = [ll[ii] for ii in idx_max_values]
+
+min_lh = [lh[ii] for ii in idx_min_values]
+min_ll = [ll[ii] for ii in idx_min_values]
+
+plt.savefig('static_regions/static_region_border_ver2.pdf', dpi=700, bbox_inches='tight')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
 # =====================================================================================================================
 # FIGURE 1: Heat map with one contour plot and quantiles of daily voltage profile
 # =====================================================================================================================
@@ -491,6 +818,7 @@ lines_ = [Line2D([0], [0], color="k", linewidth=1.5, linestyle='-'),
 labels_ = [r"$\overline{V}$",
            r"$V_{\mathrm{caution}}$"]
 
+# Iteration is through columns
 for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
                                                                       ax_1_row,
                                                                       ax_2_row,
@@ -515,12 +843,17 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
     colors_ = ["r", "g", "b", "purple"]
 
     ax_0.pcolor(x, y, list_matrices_plot[ii], shading='auto', vmin=min_voltage_cbar, vmax=max_voltage_cbar)
-    ax_0.set_xlabel("Load growth", fontsize="x-large")
-    ax_0.set_ylabel("PV growth", fontsize="x-large")
+
+    if ii == 1:
+        ax_0.set_xlabel(f"Annual energy" + r" consumption growth [\%]" , fontsize="x-large")
+
+    if ii == 0:
+        ax_0.set_ylabel("PV installed\n" + r"capacity growth [\%]", fontsize="x-large")
+
     ax_0.xaxis.set_major_locator(ticker.MultipleLocator(0.2))
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('viridis')), ax=ax_0,
                         location="bottom", pad=0.18)
-    cbar.ax.set_xlabel("Max. grid voltage", fontsize="x-large")
+    cbar.ax.set_xlabel("Max. grid voltage mag. [p.u.]", fontsize="x-large")
 
     for color_, (_, y_max_) in zip(colors_, coords_max):
         cbar.ax.vlines(x=y_max_, ymin=0, ymax=10, linewidth=2, color=color_)
@@ -566,6 +899,15 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
     for rect in rect_set:
         ax_0.add_patch(rect)
 
+    # Change the axis to percentages
+    valsy = ax_0.get_yticks()
+    ax_0.yaxis.set_major_locator(ticker.FixedLocator(valsy))
+    ax_0.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+    valsx = ax_0.get_xticks()
+    ax_0.xaxis.set_major_locator(ticker.FixedLocator(valsx))
+    ax_0.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
     # =================================================================================================================
     # Lower subplots (Profiles with quantiles)
     # =================================================================================================================
@@ -604,10 +946,10 @@ for ii, (ax_0, ax_1, ax_2, ax_3, ax_4, mixture_case) in enumerate(zip(ax_0_row,
     ax_4.set_xlabel("Time of day")
 
     if ii == 0:  # ii Stands for columns in the plot
-        ax_1.set_ylabel(f"Load: 0.0\nPV: 1.0" + "\nVoltage [p.u.]", fontsize="large")
-        ax_2.set_ylabel(f"Load: 1.0\nPV: 0.0" + "\nVoltage [p.u.]", fontsize="large")
-        ax_3.set_ylabel(f"Load: 0.0\nPV: 0.0" + "\nVoltage [p.u.]", fontsize="large")
-        ax_4.set_ylabel(f"Load: 0.5\nPV: 0.5" + "\nVoltage [p.u.]", fontsize="large")
+        ax_1.set_ylabel(r"Energy growth: 0\%" + "\n" + r"PV growth: 100\%" + "\nVoltage mag. [p.u.]", fontsize="large")
+        ax_2.set_ylabel(r"Energy growth: 100\%" + "\n" + r"PV growth: 0\%" + "\nVoltage mag. [p.u.]", fontsize="large")
+        ax_3.set_ylabel(r"Energy growth: 0\%" + "\n" + r"PV growth: 0\%" + "\nVoltage mag. [p.u.]", fontsize="large")
+        ax_4.set_ylabel(r"Energy growth: 50\%" + "\n" + r"PV growth: 50\%" + "\nVoltage mag. [p.u.]", fontsize="large")
         # ax_4.set_ylabel(f"Voltage [p.u.]", fontsize="large")
 
         # Plot legend of maximum quantiles
@@ -943,7 +1285,7 @@ for ii, ax in enumerate(ax_t):  # Iterate through columns
                   bbox_to_anchor=(0.5, -0.18),
                   loc="upper left",
                   ncol=4,
-                  title="Static Operating Zones:",
+                  title="Static Operating Regions:",
                   title_fontsize="x-large",
                   handlelength=1.5)
     elif ii==1:
@@ -971,8 +1313,8 @@ min_quant_span = [0.90, 0.88, 0.86]  # This is calculated zooming into the figur
 critical_quantiles = list(set(critical_quantile_min + critical_quantile_max))
 solutions_dictx = get_solutions_dictionary(path_file_parent, quantiles=critical_quantiles)
 
-fig, ax = plt.subplots(1, 1, figsize=(7 / 2.54, 7 / 2.54))
-plt.subplots_adjust(left=0.15, right=0.95, top=0.95, bottom=0.15)
+fig, ax = plt.subplots(1, 1, figsize=(7. / 2.54, 7 / 2.54))
+plt.subplots_adjust(left=0.2, right=0.95, top=0.95, bottom=0.15)
 #
 # ii = 0
 # quant_to_process_min = critical_quantile_min[ii]
@@ -1060,15 +1402,25 @@ ax.legend(fontsize="medium",
           # bbox_to_anchor=(0.015, -0.15),
           loc="upper left",
           ncol=2,
-          title="Static Operating Zones:",
+          title="Static Operating Regions:",
           title_fontsize="medium",
           handlelength=1,
           fancybox=True, framealpha=1.0)
 ax.grid()
 ax.set_xlim((0, 1))
 ax.set_ylim((0, 1))
-ax.set_xlabel("Load Growth", fontsize="large")
-ax.set_ylabel("PV Growth", fontsize="large")
+ax.set_xlabel(f"Annual energy" + r" consumption growth [\%]" , fontsize="large")
+ax.set_ylabel("PV installed" + r" capacity growth [\%]", fontsize="large")
+# Change the axis to percentages
+
+ax.xaxis.set_major_locator(ticker.MultipleLocator(0.20))
+ax.xaxis.set_minor_locator(ticker.MultipleLocator(0.1))
+ax.xaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
+ax.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
+ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
+ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
+
 plt.savefig('static_regions/static_contour_for_ternary.pdf', dpi=700, bbox_inches='tight')
 #%%
 
@@ -1114,7 +1466,7 @@ plt.savefig('static_regions/static_contour_for_ternary.pdf', dpi=700, bbox_inche
 #           # bbox_to_anchor=(0.015, -0.15),
 #           loc="upper left",
 #           ncol=2,
-#           title="Static Operating Zones:",
+#           title="Static Operating Regions:",
 #           title_fontsize="medium",
 #           handlelength=1)
 #

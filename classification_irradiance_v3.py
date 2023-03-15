@@ -1,5 +1,5 @@
 """
-This script tests the
+Script to make the solar irradiance model and the big Figure in the paper.
 After irradiance clustering, this script creates a k-means classifier to label the data of the irradiance
 for days from 2011 - 2021
 
@@ -781,7 +781,7 @@ for ii, (ax_, data_, x_label, y_label, title) in enumerate(zip(ax, data_list, x_
             ax_.set_title("Original load profiles")
             ax_.set_ylabel("W/m${}^2$")
             cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('plasma')), ax=ax_)
-            cbar_2.ax.set_ylabel('Daily clear index [$K_d$]')
+            cbar_2.ax.set_ylabel('Daily clear index [$K_i$]')
 
     else:
         n, bins, patches = ax_.hist(data_.ravel(), 50, density=True, facecolor='g', alpha=0.75)
@@ -847,7 +847,7 @@ for ii,(_, data_plot_) in enumerate(irradiance_measured_dataset.iterrows()):
 ax.set_title("Original load profiles")
 ax.set_ylabel("W/m${}^2$")
 cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('plasma')), ax=ax)
-cbar_2.ax.set_ylabel('Daily clear index [$K_d$]')
+cbar_2.ax.set_ylabel('Daily clear index [$K_i$]')
 
 #%%
 irr_solar_model = pivot_dataframe(data_aligned_sliced[["ghi_haurwitz"]])
@@ -896,7 +896,7 @@ for jj, (ax_i, cluster_) in enumerate(zip(ax_, range(N_CLUSTERS))):  # Columns
             ax_row.set_xlabel(x_label_)
         if jj == N_CLUSTERS - 1:
             cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.get_cmap('plasma')), ax=ax_row)
-            cbar_2.ax.set_ylabel('Daily clear index [$K_d$]')
+            cbar_2.ax.set_ylabel('Daily clear index [$K_i$]')
 
         ax_row.set_ylim(y_lim_)
 
@@ -946,7 +946,7 @@ ax1.set_title("(a)")
 ax2.plot(data_list[2], linewidth=0.4, color="green", marker=".", markersize=0.3)
 ax2.set_ylim((-10, 1100))
 ax2.yaxis.set_major_formatter(ticker.NullFormatter())
-ax2.set_xlabel("Common time frame - $x^{'}$", fontsize=6)
+ax2.set_xlabel("Common time frame - $\hat{t}$", fontsize=6)
 ax2.set_title("(b)")
 
 csi_measured_profiles = data_list[-1].mean(axis=0)
@@ -971,9 +971,9 @@ cbar_2 = plt.colorbar(plt.cm.ScalarMappable(norm=norm_individual, cmap=plt.cm.ge
                       pad=0.2,
                       ax=[ax3, ax4])
 
-cbar_2.ax.set_xlabel('Daily clear sky index [$K_d$]')
+cbar_2.ax.set_xlabel('Daily clear sky index [$K_i$]')
 ax4.set_ylim((-10, 1100))
-ax4.set_xlabel("Common time frame - $x^{'}$", fontsize=6)
+ax4.set_xlabel("Common time frame - $\hat{t}$", fontsize=6)
 ax4.yaxis.set_major_formatter(ticker.NullFormatter())
 ax4.set_title("(d)")
 # plt.tight_layout()
@@ -981,7 +981,7 @@ plt.savefig('figures/solar_model_proposal/sampling_load_models.png', dpi=700, bb
 
 #%%
 fig, ax = plt.subplots(3, 2, figsize=(4, 6))
-plt.subplots_adjust(wspace=0.65, hspace=0.65, left=0.1, right=0.99, top=0.93, bottom=0.06)
+plt.subplots_adjust(wspace=0.65, hspace=0.65, left=0.11, right=0.99, top=0.93, bottom=0.06)
 ax[0,0].axis("off")
 ax[2,0].axis("off")
 ax_ = [ax[0,1], ax[1,1], ax[2,1]]
@@ -993,15 +993,15 @@ for data_plot_, ci_daily_ in zip(data_list[4].T, csi_measured_profiles):
              color=plt.cm.get_cmap('plasma')(norm_individual(ci_daily_)))
 ax[1, 0].set_ylim((0, 2))
 ax[1, 0].set_title("(e)", fontsize="x-large")
-ax[1, 0].set_xlabel("Common time frame - $x^{'}$")
-ax[1, 0].set_ylabel("Clear sky index - CSI - $K_t$")
+ax[1, 0].set_xlabel("Common time frame - $\hat{t}$")
+ax[1, 0].set_ylabel("Clear sky index - CSI - $k_{(i,\hat{t})}$")
 
 for jj, (ax_i, cluster_, titles_) in enumerate(zip(ax_, range(N_CLUSTERS), titles_list)):  # Columns
     ax_i.set_title(titles_, fontsize="x-large")
     ax_i.set_ylabel("CSI")
 
     if jj == 2:
-        ax_i.set_xlabel("Common time frame - $x^{'}$")
+        ax_i.set_xlabel("Common time frame - $\hat{t}$")
     idx_cluster = label_frame["cluster"] == cluster_
     n_days_cluster = data_list_concat[3][idx_cluster].drop(columns=["CSI_day", "cluster"]).to_numpy().shape[0]
     helper_plot(data_list_concat[3][idx_cluster].drop(columns=["CSI_day", "cluster"]).to_numpy(),
@@ -1019,13 +1019,13 @@ ax[0].plot(day_mapping[DAY_TO_PLOT]["y_real_prime_ci"], linewidth=1.4, marker='.
              markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])),
              color=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])))
 ax[0].set_ylim((0,2))
-ax[0].set_xlabel("Common time frame - $x^{'}$")
+ax[0].set_xlabel("Common time frame - $\hat{t}$")
 ax[0].set_ylabel("CSI")
 ax[0].set_title("(i)", fontsize="x-large")
 
 ax[1].plot(day_mapping[DAY_TO_PLOT]["y_prime"], linewidth=1.4, color="green", marker=".", markersize=0.3)
 ax[1].set_ylim((-10, 1100))
-ax[1].set_xlabel("Common time frame - $x^{'}$")
+ax[1].set_xlabel("Common time frame - $\hat{t}$")
 ax[1].set_ylabel("W/m${}^2$")
 ax[1].set_title("(j)", fontsize="x-large")
 plt.savefig('figures/solar_model_proposal/fig_3.png', dpi=700, bbox_inches='tight')
@@ -1037,7 +1037,7 @@ ax[0].plot(day_mapping[DAY_TO_PLOT]["y_real_prime"], linewidth=1.4, marker='.', 
              markerfacecolor=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])),
              color=plt.cm.get_cmap('plasma')(norm_individual(day_mapping[DAY_TO_PLOT]["CSI_day"])))
 ax[0].set_ylim((-10, 1100))
-ax[0].set_xlabel("Common time frame - $x^{'}$")
+ax[0].set_xlabel("Common time frame - $\hat{t}$")
 ax[0].set_ylabel("W/m${}^2$")
 ax[0].set_title("(k)", fontsize="x-large")
 
