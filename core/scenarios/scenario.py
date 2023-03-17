@@ -4,6 +4,23 @@ from itertools import product
 
 class ScenarioGenerator:
     """
+    Assemble the copulas from load consumption and PV generation in one place.
+
+    Growth functions:
+    ----------------
+    The load and PV growth are curves (functions) that has support from 0 to 1, representing an horizon of medium term
+    planning, for instance, in a period of 11 years, 0 corresponds to 0 years and 1 correspond to 11 years.
+
+    f() -> Growth function and support: supp(f) -> [0,1]
+    y = f() -> where y belongs to [0,1], meaning range or image is: image(f) -> [0,1]
+
+    The default assumption of the model is a linear growth.
+
+    Copula functions:
+    ----------------
+    The
+
+
     Arguments:
     ----------
         copula_models:
@@ -22,12 +39,30 @@ class ScenarioGenerator:
 
     """
     def __init__(self,
-                 copula_load,
+                 copula_load: dict,
                  mixture_model_irradiance,
                  grid_info,
                  n_levels_load_growth: int = 5,
                  n_levels_pv_growth: int = 5,
-                 n_levels_mixtures: int = 5):
+                 n_levels_mixtures: int = 5,
+                 lineal_growth=True,
+                 load_growth=None,
+                 pv_growth=None):
+        """
+        Parameters:
+        -----------
+            copula_load: dict of dict: with the form copula_load[cluster_number] = {"copula": copula model,
+                                                                                    "original_data": pd.DataFrame,
+                                                                                    "idx_irradiance": np.array(bool)}
+            mixture_model_irradiance: is an instance of MixtureCopulaIrradiance class.
+                    Basically, is a group of copula models grouped together, but the class has the versatility to
+                    sample the mixture model easily.
+            grid_info: pd.DataFrame: pandas data frame with the data of the grid, without the slack node. Normally,
+                    this dataframe is used to get the base PV installed capacity and the cluster number of the node.
+                    It is not used to to PF simulations in this class.
+
+        """
+
 
         self.copula_load = copula_load
         self.mixture_model_irradiance = mixture_model_irradiance
@@ -203,6 +238,45 @@ class ScenarioGenerator:
     def create_case_scenarios(self,
                               case,
                               n_scenarios):
+        """
+        Create a dictionary with the specific required case:
+
+        Parameters:
+        -----------
+            case: tuple(tuple(float, float, float), float, float), describes:
+                       ((pi_0, pi_1, pi_2), load_growth, pv_growth)
+                where:
+                    pi_j: j = 1,..,3, Correspond to the mixture of (cloudy, sunny, dark) days and all pi sums to 1.
+                    load_growth: Number between 0,..1, to describe how much the percentage of load increased in the nodes
+                    pv_growth:  Number between 0,..1, to describe how much the percentage of the PV increased in the nodes
+
+            n_scenarios: int: number of scenarios to be simulated PER CASE.
+
+
+        Returns:
+        --------
+            case_dictionary: dict: Output of the sample of the probabilistic distribution from the copula models.
+
+                case_dictionary[(case_number, time_step)] -> has another dictionary with the following structure:
+                        data = {"P": np.array(with active power consumption per node),
+                                "Q": np.array(with reactive power consumption per node)}
+
+
+                Example:
+                    To access the reactive power value of the node 13, case number 10, time step 23, you use:
+                        active_power_value = case_dictionary[(10, 23)]["Q"][13]
+                    Meaning:
+                        case_dictionary[(case_number, time_step)][type_power][node]
+
+                It must be noted that the nodes power where sample with respect to the cluster assigned to the node
+                from the file of the grid, which can be find in the parameter self.grid_info, "cluster" column.
+
+            TODO: The class is hardcoded to have 48 time steps, or 30 min resolution of a day profile.
+
+
+        """
+
+
 
         mixture_prob, load_growth, pv_growth = case
 
