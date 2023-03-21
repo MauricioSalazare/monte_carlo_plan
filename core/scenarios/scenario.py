@@ -1,6 +1,17 @@
 import numpy as np
 from itertools import product
 
+def nearest_energy_level(energy_values_function,  energy_values_dataset):
+    """Find the closest energy value of the real dataset, to each element of energy_values_function"""
+
+    nearest_energy_level = []
+    # Find the closest discrete energy level in the dataset, that corresponds to the lineal energy growth.
+    for energy_level in energy_values_function:
+        nearest_energy_level.append(energy_values_dataset[np.argmin(np.abs(energy_values_dataset - energy_level))])
+    nearest_energy_level = np.array(nearest_energy_level)
+
+    return nearest_energy_level
+
 
 class ScenarioGenerator:
     """
@@ -46,8 +57,8 @@ class ScenarioGenerator:
                  n_levels_pv_growth: int = 5,
                  n_levels_mixtures: int = 5,
                  lineal_growth=True,
-                 load_growth=None,
-                 pv_growth=None):
+                 load_growth_function=None,
+                 pv_growth_function=None):
         """
         Parameters:
         -----------
@@ -60,6 +71,13 @@ class ScenarioGenerator:
             grid_info: pd.DataFrame: pandas data frame with the data of the grid, without the slack node. Normally,
                     this dataframe is used to get the base PV installed capacity and the cluster number of the node.
                     It is not used to to PF simulations in this class.
+            load_growth_function: any: It is the load growth function, possibly non lineal. This function must have domain
+                    and image of [0,1]. Also, it must comply f(0) = 0 and f(1) = 1.
+                    The  function represents the increase in percentage and its normalized output in energy growth.
+                    This function could be a lambda function or a spline from scipy.
+                    e.g. f = lambda x: x **2
+                         f = lambda x: np.sqrt(x)
+                         f = UnivariateSpline(x, y)
 
         """
 
@@ -76,11 +94,13 @@ class ScenarioGenerator:
 
         self.n_clusters = len(self.copula_load.keys())  #TODO: This should be the number of copula irradiance models not load!!
         self.cluster_labels = list(range(len(self.copula_load.keys())))
+        self.nodes_per_cluster =  self.grid_info["cluster"].value_counts().sort_index()
 
         self.percentages_load_growth = np.linspace(0, 1.0, self.n_levels_load_growth + 1).round(2)
         self.percentages_pv_growth = np.linspace(0, 1.0, self.n_levels_pv_growth + 1).round(2)
 
-        self.mapper_load_growth = self.create_mapper_load_growth()
+        self.mapper_load_growth = self.create_mapper_load_growth(lineal_growth=lineal_growth,
+                                                                 f=load_growth_function)
         self.cases_combinations = self.create_cases()
 
     def create_cases(self):
@@ -101,6 +121,8 @@ class ScenarioGenerator:
         """
 
         percentages_mixtures = np.linspace(0, 1.0, self.n_levels_mixtures + 1).round(1)
+
+        # Only get the valid mixture combination (all values must sum to one)
         mixture_combinations = [mixture for mixture in product(percentages_mixtures,
                                                                repeat=self.n_clusters) if np.isclose(1.0, sum(mixture))]
 
@@ -113,37 +135,82 @@ class ScenarioGenerator:
 
         return cases
 
-    def create_mapper_load_growth(self) -> dict:
+    def create_mapper_load_growth(self, lineal_growth: bool=True, f=None) -> dict:
         """
-        Computes a dictionary that has a discrete load growth to avoid numerical instability
+        Computes a dictionary that has the mapping of discrete load growth vs energy value that follows a lineal or
+        non-lineal function.
+        The  output energy value of the dictionary is the closes energy value of the dataset to the function, this is
+        done to avoid numerical instability
         e.g., mapper_cluster_load_growth[LOAD_GROWTH_STEP] -> Annual energy value in GWh/year
         where LOAD_GROWTH_STEP is a float between [0, 1.0]
+
+        Parameters:
+        -----------
+            lineal_growth: bool: Flag, indicates if the function is lineal or not. Default is True.
+            f: any: It is the load growth function, possibly non lineal. This function must have domain and
+                    image of [0,1]. Also, it must comply f(0) = 0 and f(1) = 1.
+                    The  function represents the increase in percentage and its normalized output in energy growth.
+                    This function could be a lambda function or a spline from scipy.
+                    e.g. f = lambda x: x **2
+                         f = lambda x: np.sqrt(x)
+                         f = UnivariateSpline(x, y)
+
         """
+
+        if not lineal_growth and f is not None:
+            assert np.allclose(f(0), 0, atol=0.01), "The non-lineal function should map closed to f(0) == 0.0"
+            assert np.allclose(f(1), 1, rtol=0.01), "The non-lineal function should map closed to f(1) == 1.0"
+
+
+        perc_load_growth = self.percentages_load_growth
 
         cluster_labels = list(range(len(self.copula_load.keys())))
         mapper_cluster_load_growth = {}
 
+
         for k_cluster in cluster_labels:
-            energy_values = self.copula_load[k_cluster]["original_data"]["avg_gwh"].\
-                                                                    value_counts().sort_index().index.to_numpy()
+            energy_values = self.copula_load[k_cluster]["original_data"]["avg_gwh"]. \
+                value_counts().sort_index().index.to_numpy()
+
+            """
+            The energy values are bounded, because the copula models have problems to simulate data in the extreme
+            cases. Copula models do not extrapolate data to unseen values.
+            The bounding is between the 10%-90% percentiles.
+            """
+
             lower_bound_energy = np.nanquantile(energy_values, q=0.1)  # Min. possible annual energy
             upper_bound_energy = np.nanquantile(energy_values, q=0.9)  # Max. possible annual energy
 
             lower_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - lower_bound_energy))]
             upper_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - upper_bound_energy))]
 
-            energy_levels = np.linspace(lower_bound_energy_discrete, upper_bound_energy_discrete,
-                                        self.n_levels_load_growth + 1)
+            # Linear function:
+            if lineal_growth:
+                energy_values_function = np.linspace(lower_bound_energy_discrete, upper_bound_energy_discrete,
+                                                     self.n_levels_load_growth + 1)
+            else:
+                # Non-linear function:
+                energy_values_function = (
+                            f(perc_load_growth) * (upper_bound_energy_discrete - lower_bound_energy_discrete) +
+                            lower_bound_energy_discrete
+                                          )
 
-            energy_level_discrete = []
+            energy_level_discrete = nearest_energy_level(energy_values_function, energy_values)
 
-            # Find the closest discrete energy level in the dataset, that corresponds to the lineal energy growth.
-            for energy_level in energy_levels:
-                energy_level_discrete.append(energy_values[np.argmin(np.abs(energy_values - energy_level))])
-            energy_level_discrete = np.array(energy_level_discrete)
+            ## Helper figure to see the result of the non-linear function
+            # fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+            # plt.subplots_adjust(left=0.15, right=0.95)
+            # ax.plot(perc_load_growth, energy_values_function, "-.", label="Ideal curve growth", color="C1")
+            # ax.plot(perc_load_growth, energy_level_discrete, "--x", label="Nearest energy value to the dataset",
+            #         color="C2")
+            # ax.scatter(np.zeros(len(energy_values)), energy_values, s=2, label="Energy values (Real dataset)",
+            #            color="C0")
+            # ax.legend(fontsize="x-small")
+            # ax.set_title(f"Cluster: {k_cluster}")
+            # ax.set_xlabel("Growth percentage")
+            # ax.set_ylabel("Annual Energy consumption [GWh/year]")
 
-            mapper_load_growth = dict(zip(self.percentages_load_growth, energy_level_discrete))
-
+            mapper_load_growth = dict(zip(perc_load_growth, energy_level_discrete))
             mapper_cluster_load_growth[k_cluster] = mapper_load_growth
 
         return mapper_cluster_load_growth
@@ -154,6 +221,9 @@ class ScenarioGenerator:
                                       load_growth):
         """
         Sample the copula model of the active power load profile, for one cluster.
+
+        Right now the reactive power is hard coded to have a a power factor of 0.995 (cos(\phi))
+        Meaning: tan(\phi) = 0.1 -> \phi approx 5.7105° cos(\phi) = 0.995 : Here P * tan(\phi) = Q
 
         Parameter:
         =========
@@ -202,6 +272,8 @@ class ScenarioGenerator:
         assert np.allclose(ap_sampled_per_node[1, 0, :],
                            active_power_sampled_copula[n_scenarios, :]), "Check the reshaping"
 
+
+        # Assign the generated scenarios to the correct node according to the cluster number.
         nodes_cluster = self.grid_info["NODES"][self.grid_info["cluster"] == k_cluster].values
 
         ap_dict_matrix_cluster = {}
@@ -235,6 +307,77 @@ class ScenarioGenerator:
 
         return active_power_stack, reactive_power_stack
 
+
+    @staticmethod
+    def flip_matrix(power_matrix):
+        """
+        Flip the 3D matrix, that must have the dimensions
+         (nodes, scenarios, time_steps) into (scenarios, time_steps, nodes)
+        """
+
+        (nodes_, scenarios_, time_steps_) = power_matrix.shape
+
+        power_stack_flip = []
+        for scenario_ in range(scenarios_):
+            power_stack_flip.append(power_matrix[:, scenario_, :].T)
+
+        return np.stack(power_stack_flip)
+
+
+    def sample_scenarios(self,
+                         case,
+                         n_scenarios):
+        """
+        Create the net active power and reactive power matrices for a required case:
+
+        Parameters:
+        -----------
+            case: tuple(tuple(float, float, float), float, float), describes:
+                       ((pi_0, pi_1, pi_2), load_growth, pv_growth)
+                       ((cloudy, sunny, dark), ..., ...)
+                where:
+                    pi_j: j = 1,..,3, Correspond to the mixture of (cloudy, sunny, dark) days and all pi sums to 1.
+                    load_growth: Number between 0,..1, to describe how much the percentage of load increased in the nodes
+                    pv_growth:  Number between 0,..1, to describe how much the percentage of the PV increased in the nodes
+
+            n_scenarios: int: number of scenarios to be simulated PER CASE.
+
+        Returns:
+        --------
+            active_power_stack_net: np.ndarray: array with dimension (nodes, n_scenarios, time_steps).
+                Be aware that the script is hard coded to have 48 time steps. i.e., 30-min resolution consumption
+            reactive_power_stack: np.ndarray: array with the same dimensions as active_power_stack_net.
+                Be aware that the script is currently hard coded to have a constant power factor.
+        """
+
+        mixture_prob, load_growth, pv_growth = case
+
+        active_power_stack, reactive_power_stack = self.create_load_scenarios(n_scenarios=n_scenarios,
+                                                                              load_growth=load_growth)
+
+        """
+        The shape of the active power matrix.
+        active_power_stack => (nodes, scenarios, time_steps)
+        """
+
+        # Adjust for PV active power generation
+        irradiance_scenarios = self.mixture_model_irradiance.sample_mixture(n_samples=n_scenarios, prob=mixture_prob)
+
+        assert irradiance_scenarios.shape == active_power_stack[0, ...].shape
+        assert irradiance_scenarios.shape == reactive_power_stack[0, ...].shape
+
+        irr_matrix = irradiance_scenarios.divide(1000).values  # Convert irradiance from W/m^2 to to kW/m^2
+        kwp_nodes = self.grid_info["kwp"].multiply(1 + pv_growth).values
+
+        pv_generation_kw = np.array([irr_matrix * kwp_node for kwp_node in kwp_nodes])
+        active_power_stack_net = active_power_stack - pv_generation_kw
+
+        self._last_active_power_stack = active_power_stack
+        self._last_reactive_power_stack = reactive_power_stack
+        self._last_pv_generation_kw = pv_generation_kw
+
+        return active_power_stack_net, reactive_power_stack
+
     def create_case_scenarios(self,
                               case,
                               n_scenarios):
@@ -245,6 +388,7 @@ class ScenarioGenerator:
         -----------
             case: tuple(tuple(float, float, float), float, float), describes:
                        ((pi_0, pi_1, pi_2), load_growth, pv_growth)
+                       ((cloudy, sunny, dark), ..., ...)
                 where:
                     pi_j: j = 1,..,3, Correspond to the mixture of (cloudy, sunny, dark) days and all pi sums to 1.
                     load_growth: Number between 0,..1, to describe how much the percentage of load increased in the nodes
@@ -252,57 +396,51 @@ class ScenarioGenerator:
 
             n_scenarios: int: number of scenarios to be simulated PER CASE.
 
-
         Returns:
         --------
             case_dictionary: dict: Output of the sample of the probabilistic distribution from the copula models.
 
-                case_dictionary[(case_number, time_step)] -> has another dictionary with the following structure:
+                case_dictionary[(scenario_#, time_step)] -> has another dictionary with the following structure:
                         data = {"P": np.array(with active power consumption per node),
                                 "Q": np.array(with reactive power consumption per node)}
 
 
                 Example:
-                    To access the reactive power value of the node 13, case number 10, time step 23, you use:
+                    To access the reactive power value of the node 13, scenario 10, time step 23, you use:
                         active_power_value = case_dictionary[(10, 23)]["Q"][13]
                     Meaning:
-                        case_dictionary[(case_number, time_step)][type_power][node]
+                        case_dictionary[(scenario_number, time_step)][type_power][node]
 
                 It must be noted that the nodes power where sample with respect to the cluster assigned to the node
                 from the file of the grid, which can be find in the parameter self.grid_info, "cluster" column.
 
             TODO: The class is hardcoded to have 48 time steps, or 30 min resolution of a day profile.
-
-
         """
-
-
-
-        mixture_prob, load_growth, pv_growth = case
-
-        active_power_stack, reactive_power_stack = self.create_load_scenarios(n_scenarios=n_scenarios,
-                                                                              load_growth=load_growth)
-
-        # Adjust for PV active power generation
-        irradiance_scenarios = self.mixture_model_irradiance.sample_mixture(n_samples=n_scenarios, prob=mixture_prob)
-
-        assert irradiance_scenarios.shape == active_power_stack[0, ...].shape
-        assert irradiance_scenarios.shape == reactive_power_stack[0, ...].shape
-
-        irr_matrix = irradiance_scenarios.divide(1000).values  # Convert irradiance to kW/m^2
-        kwp_nodes = self.grid_info["kwp"].multiply(1 + pv_growth).values
-
-        pv_generation_kw = np.array([irr_matrix * kwp_node for kwp_node in kwp_nodes])
-        active_power_stack_net = active_power_stack - pv_generation_kw
+        active_power_stack_net, reactive_power_stack = self.sample_scenarios(case=case, n_scenarios=n_scenarios)
 
         case_dictionary = {}
         for scenario in range(n_scenarios):
-            for time_step in range(48):
+            for time_step in range(48):  # Hard coded to 30 min resolution.
                 case_dictionary[(scenario, time_step)] = {"P": active_power_stack_net[:, scenario, time_step],
                                                           "Q": reactive_power_stack[:, scenario, time_step]}
 
-        self._last_active_power_stack = active_power_stack
-        self._last_reactive_power_stack = reactive_power_stack
-        self._last_pv_generation_kw = pv_generation_kw
-
         return case_dictionary
+
+    def create_case_scenarios_tensorpoweflow(self,
+                                             case,
+                                             n_scenarios):
+        """
+        Same method as create_case_scenarios, but instead of returning a dictionary, it returns the active and
+        reactive power arrays, flipped with the dimensions necessary for the tensorpowerflow algorithm to run.
+
+        Return:
+        -------
+            active_power_stack_net_flipped: np.ndarray: Net active power with dimensions (scenarios, time_steps, nodes)
+            reactive_power_stack_flipped: np.ndarray: Reactive power with dimensions (scenarios, time_steps, nodes)
+
+        """
+        active_power_stack_net, reactive_power_stack = self.sample_scenarios(case=case, n_scenarios=n_scenarios)
+        active_power_stack_net_flipped = self.flip_matrix(active_power_stack_net)
+        reactive_power_stack_flipped = self.flip_matrix(reactive_power_stack)
+
+        return active_power_stack_net_flipped, reactive_power_stack_flipped
