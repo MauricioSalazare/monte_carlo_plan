@@ -441,7 +441,7 @@ warnings.filterwarnings("default")
 
 #%%
 # =====================================================================================================================
-# FIGURE 1 (ver 2): Heat map with one contour plot and quantiles of daily voltage profile
+# FIGURE 1 (ver 2 -- HORIZONTAL): Heat map with one contour plot and quantiles of daily voltage profile
 # =====================================================================================================================
 x_axis = pd.date_range(start="2021-11-01", periods=48, freq="30T")
 
@@ -1422,6 +1422,13 @@ ax.yaxis.set_minor_locator(ticker.MultipleLocator(0.05))
 ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1.0, decimals=0, symbol=r'\%', is_latex=True))
 
 plt.savefig('static_regions/static_contour_for_ternary.pdf', dpi=700, bbox_inches='tight')
+
+borders = pd.DataFrame({"danger": border_limit_region["danger"][quant_to_process_max],
+                        "caution": border_limit_region["caution"][quant_to_process_max]})
+borders_fill_undervoltage = pd.DataFrame({"under_volt_fill_x": x_new[idx], "under_volt_fill_y":y_new[idx]})
+borders.to_csv("borders_danger_caution_90_percentile.csv")
+borders_fill_undervoltage.to_csv("borders_undervoltage_90_percentile.csv")
+
 #%%
 
 #

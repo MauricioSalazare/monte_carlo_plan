@@ -98,6 +98,7 @@ class ScenarioGenerator:
 
         self.percentages_load_growth = np.linspace(0, 1.0, self.n_levels_load_growth + 1).round(2)
         self.percentages_pv_growth = np.linspace(0, 1.0, self.n_levels_pv_growth + 1).round(2)
+        self.min_max_annual_energy_per_cluster = None
 
         self.mapper_load_growth = self.create_mapper_load_growth(lineal_growth=lineal_growth,
                                                                  f=load_growth_function)
@@ -135,6 +136,49 @@ class ScenarioGenerator:
 
         return cases
 
+    def _get_min_max_energy_per_cluster(self, lower_quantile=0.1, upper_quantile=0.9):
+        """
+        Compute the specified lower and upper quantiles over the distribution of the annual energy consumption
+        per cluster.
+
+        The energy values are bounded, because the copula models have problems to simulate data in the extreme
+        cases. Copula models do not extrapolate data to unseen values.
+        The bounding is between the 10%-90% percentiles.
+        """
+
+
+        min_max_energy_per_cluster = {}
+
+        for k_cluster in self.cluster_labels:
+            energy_values = self.copula_load[k_cluster]["original_data"]["avg_gwh"]. \
+                value_counts().sort_index().index.to_numpy()
+
+            """
+            The energy values are bounded, because the copula models have problems to simulate data in the extreme
+            cases. Copula models do not extrapolate data to unseen values.
+            The bounding is between the 10%-90% percentiles.
+            """
+
+            lower_bound_energy = np.nanquantile(energy_values, q=lower_quantile)  # Min. possible annual energy
+            upper_bound_energy = np.nanquantile(energy_values, q=upper_quantile)  # Max. possible annual energy
+
+            # Find the closes point in the dataset to the computed lower and upper values.
+            lower_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - lower_bound_energy))]
+            upper_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - upper_bound_energy))]
+
+            cluster_energy_data = {k_cluster: {"min": lower_bound_energy_discrete,
+                                               "max": upper_bound_energy_discrete,
+                                               "annual_energy_gwh": energy_values}}
+
+            min_max_energy_per_cluster.update(cluster_energy_data)
+
+        self.min_max_annual_energy_per_cluster = min_max_energy_per_cluster
+
+
+        return min_max_energy_per_cluster
+
+
+
     def create_mapper_load_growth(self, lineal_growth: bool=True, f=None) -> dict:
         """
         Computes a dictionary that has the mapping of discrete load growth vs energy value that follows a lineal or
@@ -164,28 +208,24 @@ class ScenarioGenerator:
 
         perc_load_growth = self.percentages_load_growth
 
-        cluster_labels = list(range(len(self.copula_load.keys())))
         mapper_cluster_load_growth = {}
 
+        """
+        The energy values are bounded, because the copula models have problems to simulate data in the extreme
+        cases. Copula models do not extrapolate data to unseen values.
+        The bounding is between the 10%-90% percentiles.
+        """
 
-        for k_cluster in cluster_labels:
-            energy_values = self.copula_load[k_cluster]["original_data"]["avg_gwh"]. \
-                value_counts().sort_index().index.to_numpy()
+        min_max_energy_per_cluster = self._get_min_max_energy_per_cluster(lower_quantile=0.1,
+                                                                          upper_quantile=0.9)
 
-            """
-            The energy values are bounded, because the copula models have problems to simulate data in the extreme
-            cases. Copula models do not extrapolate data to unseen values.
-            The bounding is between the 10%-90% percentiles.
-            """
+        for k_cluster in self.cluster_labels:
+            lower_bound_energy_discrete = min_max_energy_per_cluster[k_cluster]["min"]
+            upper_bound_energy_discrete = min_max_energy_per_cluster[k_cluster]["max"]
+            energy_values = min_max_energy_per_cluster[k_cluster]["annual_energy_gwh"]
 
-            lower_bound_energy = np.nanquantile(energy_values, q=0.1)  # Min. possible annual energy
-            upper_bound_energy = np.nanquantile(energy_values, q=0.9)  # Max. possible annual energy
-
-            lower_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - lower_bound_energy))]
-            upper_bound_energy_discrete = energy_values[np.argmin(np.abs(energy_values - upper_bound_energy))]
-
-            # Linear function:
             if lineal_growth:
+                # Linear function:
                 energy_values_function = np.linspace(lower_bound_energy_discrete, upper_bound_energy_discrete,
                                                      self.n_levels_load_growth + 1)
             else:
@@ -311,8 +351,9 @@ class ScenarioGenerator:
     @staticmethod
     def flip_matrix(power_matrix):
         """
-        Flip the 3D matrix, that must have the dimensions
+        Flip the 3D matrix, that must change the dimensions
          (nodes, scenarios, time_steps) into (scenarios, time_steps, nodes)
+        This makes the matrix compatible with tensorpowerflow.
         """
 
         (nodes_, scenarios_, time_steps_) = power_matrix.shape
@@ -366,6 +407,8 @@ class ScenarioGenerator:
         assert irradiance_scenarios.shape == active_power_stack[0, ...].shape
         assert irradiance_scenarios.shape == reactive_power_stack[0, ...].shape
 
+
+        # TODO: Change the PV load growth to be a function per node and not linealy proportional.
         irr_matrix = irradiance_scenarios.divide(1000).values  # Convert irradiance from W/m^2 to to kW/m^2
         kwp_nodes = self.grid_info["kwp"].multiply(1 + pv_growth).values
 
@@ -384,6 +427,12 @@ class ScenarioGenerator:
         """
         Create a dictionary with the specific required case:
 
+        An overview of the nested methods called by this function:
+
+        create_case_scenarios ->     samples_scenarios      -> create_load_scenarios -> create_load_scenarios_cluster
+           (PQ, PV matrices)  ->  (PQ matrix all clusters   ->     (PQ all clusters) ->      (PQ one cluster)
+                                    and Irradiance profile,
+                                    which transformed to PV)
         Parameters:
         -----------
             case: tuple(tuple(float, float, float), float, float), describes:

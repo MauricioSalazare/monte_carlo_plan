@@ -70,11 +70,18 @@ sgn = scenario_generator_non_lineal
 
 # Example
 case_dict = sgn.create_case_scenarios(case=((0.0,0.0,1.0),1.0,0.0),
-                                      n_scenarios=100)
+                                      n_scenarios=500)
 active, reactive = sgn.create_case_scenarios_tensorpoweflow(case=((0.0,0.0,1.0),1.0,0.0),
-                                                            n_scenarios=100)
+                                                            n_scenarios=500)
 
 
 #%%
+node = 23
 fig, ax = plt.subplots(1,1, figsize=(5,5))
-ax.plot(active[0,:,14])
+ax.plot(active[:,:, node].T, linewidth=0.4, color="grey")
+# ax.plot(active.mean(axis=0)[:, node], color="red")
+ax.plot(np.nanquantile(active, axis=0, q=0.5)[:, node], color="red", linestyle="-")
+ax.plot(np.nanquantile(active, axis=0, q=0.9)[:, node], color="red", linestyle="--")
+ax.plot(np.nanquantile(active, axis=0, q=0.1)[:, node], color="red", linestyle="--")
+
+
