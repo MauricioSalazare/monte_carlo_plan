@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 from matplotlib import collections  as mc
 from scipy.interpolate import UnivariateSpline, interp1d, pchip_interpolate
-
+import matplotlib.gridspec as gridspec
 
 
 file_name_load_models = r"../models/copula_model_load.pkl"
@@ -250,11 +250,6 @@ ax2.tick_params(axis='both', which='major', labelsize="small")
 ax2.tick_params(axis='both', which='minor', labelsize="small")
 
 
-# #%% Analysis of the growths
-# #%%
-# def normalizer(min_, max_):
-#     return lambda x: ( (x - min_)/(max_ - min_) ) * 100  #  y = (x-xmin)/(xmax - xmin)   : Function
-
 #%%
 
 def segments(x_data, z_data):
@@ -305,14 +300,14 @@ def normalize_and_inverse(min_, max_):
 
     return f, f_inv
 
-def growth_curve_normalized(x, y, k=3, curve="spline"):
+def growth_curve_normalized(x=None, y=None, k=3, curve="spline"):
     """
     Create a growth function with support [0,1] and range [0,1].
 
     Parameters:
     -----------
-        x: np.ndarray: Control points for the interpolation that corresponds to the x-axis
-        y: np.ndarray: Control points for the interpolation that corresponds to the y-axis
+        x: np.ndarray: Control points for the interpolation that corresponds to the x-axis if curve=="spline"
+        y: np.ndarray: Control points for the interpolation that corresponds to the y-axis if curve=="spline"
         k: int: Degree of the spline to fit.
         curve: str: Type of interpolation for the control points.
             The options are: ["spline", "lineal", "root", "square"]
@@ -338,11 +333,15 @@ def growth_curve_normalized(x, y, k=3, curve="spline"):
     elif curve == "square":
         g_normalized = lambda x: x ** 2
 
+    elif curve == "corrected":
+        g_normalized = lambda w: np.clip(pchip_interpolate(x, y, w), 0, 1)
+
     else:
         raise NotImplementedError
 
-    assert np.allclose(g_normalized(0), 0, atol=0.01), "The non-lineal function should map closed to f(0) == 0.0"
-    assert np.allclose(g_normalized(1), 1, rtol=0.01), "The non-lineal function should map closed to f(1) == 1.0"
+    if curve != "corrected":
+        assert np.allclose(g_normalized(0), 0, atol=0.01), "The non-lineal function should map closed to f(0) == 0.0"
+        assert np.allclose(g_normalized(1), 1, rtol=0.01), "The non-lineal function should map closed to f(1) == 1.0"
 
     return g_normalized
 
@@ -362,47 +361,82 @@ def growth_curve(g_normalized, min_, max_):
     return g, g_inv
 
 #%%
-def growth_plot(ax, minimum, maximum, control_points,
-                corrected_curve=None, growth="load", type="spline", highlight_point=None):
+def growth_plot(ax,
+                minimum,
+                maximum,
+                control_points=None,
+                growth="load",
+                type="spline",
+                highlight_point=None,
+                plot_title=False,
+                plot_legend=False,
+                plot_xlabel=False,
+                highlight_marker="+",
+                markersize=200,
+                linecolor="C2",
+                xlim=None,
+                ylim=None,
+                ylim2=None,
+                set_ax_lims=False,
+                get_ax_lims=False,
+                fontsize=5):
 
     if highlight_point is not None:
         assert isinstance(highlight_point, int), "Highlighted point must be a integer value."
 
+    # Functions explanations:
+    # f(): Normalize function: From GWh to [%]
+    # g_normalized(): Function of the normalized growth. Output value from [0-1].
+    # g(): Function of the de-normalized energy. Output value from [Min. energy in GWh, Max. energy GWh]
+
     if growth == "load":
-        title = "Load growth network - w(l)"
-        x_label = "Step increment (l) - [years]"
-        y1_label = "Energy consumption [GWh/year] -> g(n)"
-        y2_label = "Annual Energy consumption growth [%] -> f(g(n))"
+        title = "Load growth network - $w(l)$"
+        x_label = "Step increment ($l$) [years]"
+        y1_label = "Total gird annual energy\nconsumption [GWh/year]"
+        y2_label = "Annual energy consumption\ngrowth [\%]"
 
         label1 = "g(m): [GWh/year]: l-step"
         label2 = "g(n): [GWh/year]: l-step - Interpolated"
         label3 = "f(g(m)): Energy[%]"
-        label4 = "f(g(m)): Corrected path [%]"
 
     elif growth == "pv":
-        title = "PV growth network - alpha(l)"
-        x_label = "Step increment (l) - [years]"
-        y1_label = "PV installed capacity [MWp] -> g(n)"
-        y2_label = "PV installed capacity growth [%] -> f(g(n))"
+        title = "PV growth network -  " + r"$\alpha(l)$"
+        x_label = "Step increment (l) [years]"
+        y1_label = "Total grid PV installed\ncapacity [MWp]"
+        y2_label = "PV installed capacity\ngrowth [\%]"
 
         label1 = "g(m): [MWp]: l-step"
         label2 = "g(n): [MWp]: l-step - Interpolated"
-        label3 = "f(g(m)): PV Ints. Capacity [%]"
-        label4 = "f(g(m)): Corrected path [%]"
+        label3 = "f(g(m)): PV Ints. Capacity [\%]"
 
     else:
         raise NotImplementedError
 
     m = np.linspace(0, 1, 11)
-    if corrected_curve is not None:
-        x_corrected = np.linspace(min(m), max(m), num=100)
-        y_corrected_load = pchip_interpolate(m, corrected_curve, x_corrected)
 
+    f, f_inv = normalize_and_inverse(minimum, maximum)  # From GWh to [% Energy]
 
-    f, f_inv = normalize_and_inverse(minimum, maximum)
-    g_normalized = growth_curve_normalized(control_points[:, 0], control_points[:, 1], curve=type)
-    g, g_inv = growth_curve(g_normalized, minimum, maximum)
+    if type == "corrected":
+        # x_corrected = np.linspace(min(m), max(m), num=100)
+        # y_corrected_load = pchip_interpolate(m, corrected_curve, x_corrected)
 
+        if growth == "load":
+            idx_column = 0
+        else:
+            idx_column = 1
+        g_normalized = growth_curve_normalized(m,
+                                               control_points[:, idx_column],
+                                               curve=type)  # This is the normalized curve of growth.
+        label3 = "f(g(m)): Corrected path [%]"
+
+    elif type == "spline" and control_points is not None:
+        g_normalized = growth_curve_normalized(control_points[:, 0],
+                                               control_points[:, 1],
+                                               curve=type)  # This is the normalized curve of growth.
+    else:
+        g_normalized = growth_curve_normalized(curve=type)  # This is the normalized curve of growth.
+
+    g, g_inv = growth_curve(g_normalized, minimum, maximum)  # This is the de-normalized curve of growth.
 
     to_integer = 10  # Conversion of decimal points of the x axis to integer numbers
 
@@ -451,54 +485,87 @@ def growth_plot(ax, minimum, maximum, control_points,
     lc2_w = mc.LineCollection(segments_per_w, colors="C2", linewidths=0.4, linestyles="-.")
     lc3_w = mc.LineCollection(segments_ver_w, colors="C2", linewidths=0.4, linestyles="-.")
 
-    ax.scatter(m * to_integer, y_1_kw, s=30, marker="o", color="C2", label=label1, zorder=10)
+    ax.scatter(m * to_integer, y_1_kw, s=30, marker="o", color=linecolor, label=label1, zorder=10)
     ax.plot(np.linspace(0, 1, 100) * to_integer, g(np.linspace(0, 1, 100)), "-", color="C2", zorder=1)
 
     # Percentage axis
     ax2 = ax.twinx()
     x_values_high_res = np.linspace(0, 1, 100)
     y_values_high_res = f(g(x_values_high_res))
-    ax2.plot(x_values_high_res * to_integer, y_values_high_res, "-", color="C2", label=label3, zorder=1)
-
-    if corrected_curve is not None:
-        ax2.plot(x_corrected * to_integer, y_corrected_load, "-", color="C0", label=label4, zorder=1)
-        ax2.scatter(m * to_integer, corrected_curve, s=30, marker="o", color="C0", zorder=10,
-                    label=label4)
-
+    ax2.plot(x_values_high_res * to_integer, y_values_high_res, "-", color=linecolor, label=label3, zorder=10)
     ax2.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
 
     if n_segments:
-        ax.add_collection(lc1_s)
-        ax2.add_collection(lc2_s)
+        # ax.add_collection(lc1_s)
+        # ax2.add_collection(lc2_s)
         ax2.add_collection(lc3_s)
         # ax.set_xlabel("n", color="C1")
-        ax.set_xlabel(x_label)
+
+        ax2.hlines(y=m, xmin=np.zeros(11), xmax=np.ones(11)*10, colors="C1", linewidths=0.4, linestyles="-.", zorder=0)
+
 
     if m_segments:
         ax.add_collection(lc1_w)
         ax2.add_collection(lc2_w)
         ax2.add_collection(lc3_w)
         # ax.set_xlabel("m", color="C2")
-        ax.set_xlabel(x_label)
+        # ax.set_xlabel(x_label)
 
     if highlight_point is not None:
         ax2.scatter(m[highlight_point] * to_integer, y_1_per[highlight_point],
-                   s=200, marker="+", color="C4", zorder=10)
+                   s=markersize,
+                    marker=highlight_marker,
+                    color=linecolor,
+                    edgecolors="k",
+                    zorder=10)
 
+
+    # Interpolated points
     ax.scatter(x_2 * to_integer, y_2_kw, s=10, color="C1", marker="o", zorder=0,
                label=label2)
-    ax.legend(fontsize="x-small")
-    ax2.legend(fontsize="x-small", loc="lower right")
-    ax.set_ylabel(y1_label)
-    ax2.set_ylabel(y2_label)
+
+    if plot_legend:
+        ax.legend(fontsize=fontsize-2)
+        ax2.legend(fontsize=fontsize-2,
+                   loc="lower right")
+
+
+    ax.set_ylabel(y1_label, fontsize=fontsize)
+    ax2.set_ylabel(y2_label, fontsize=fontsize)
+
+    if plot_xlabel:
+        ax.set_xlabel(x_label, fontsize=fontsize)
     ax.xaxis.set_major_locator(mticker.MultipleLocator(1.0))
     ax2.yaxis.set_major_locator(mticker.MultipleLocator(0.1))
-    ax.set_title(title)
+
+    if plot_title:
+        ax.set_title(title, fontsize=fontsize)
+
+    ax.tick_params(axis='both', which='major', labelsize=fontsize - 1)
+    ax.tick_params(axis='both', which='minor', labelsize=fontsize - 1)
+    ax2.tick_params(axis='both', which='major', labelsize=fontsize - 1)
+
+    if get_ax_lims:
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        ylim2 = ax2.get_ylim()
+
+        # Growth values in high resolution and low res (every l-steps), also the limits of the graphs
+        return y_values_high_res, y_1_per, xlim, ylim, ylim2
+
+    if set_ax_lims:
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax2.set_ylim(ylim2)
+
 
     return y_values_high_res, y_1_per  # Growth values in high resolution and low res (every l-steps)
 
 
-# Borders from the scrip: figures_static_regions.py ~line:1426:
+from core.figure_utils import set_figure_art
+set_figure_art()
+
+# Borders of the static regions brought from the script: figures_static_regions.py ~line:1426:
 borders = pd.read_csv("borders_danger_caution_90_percentile.csv", index_col=0)
 borders_fill_undervoltage = pd.read_csv("borders_undervoltage_90_percentile.csv", index_col=0)
 x_undervoltage = borders_fill_undervoltage["under_volt_fill_x"]
@@ -544,7 +611,6 @@ corrected_curve = np.array([[0.0, 0.0],
                             [0.9, 0.7],
                             [0.90001, 0.70001]])
 
-
 # For the spline:
 control_points = np.array([(0.0, 0.0),
                            (0.3, 0.4),
@@ -552,7 +618,7 @@ control_points = np.array([(0.0, 0.0),
                            (0.7, 0.5),
                            (1.0, 1.0)])
 
-highlight_point = 7
+highlight_point = 4
 
 # Compute the functions for the load growth
 clusters = scenario_generator.cluster_labels
@@ -574,49 +640,195 @@ maximum_pv = minimum_pv * 2
 x_corrected = np.linspace(min(corrected_curve[:,0]), max(corrected_curve[:,0]), num=100)
 y_corrected = pchip_interpolate(corrected_curve[:,0], corrected_curve[:,1], x_corrected)
 
-fig, ax = plt.subplots(1, 3, figsize=(15, 4.5))
-plt.subplots_adjust(right=0.95, wspace=0.5, left=0.05)
-load_high_res, load_per = growth_plot(ax[0], minimum, maximum, control_points,
-                                      corrected_curve[:,0],
-                                      highlight_point=highlight_point,
-                                      growth="load", type="spline")
-pv_high_res, pv_per = growth_plot(ax[1], minimum_pv, maximum_pv, control_points,
-                                  corrected_curve[:, 1],
+
+fontsize = 6
+fig = plt.figure(figsize=(4.5, 7.5))
+widths = [1]
+heights = [2,1]
+
+outer = fig.add_gridspec(2, 1,
+                         wspace=0.15, hspace=0.25, left=0.1, bottom=0.05, right=0.87, top=0.95,
+                         width_ratios=widths, height_ratios=heights )
+
+sub_1 = gridspec.GridSpecFromSubplotSpec(3, 2, subplot_spec=outer[0], wspace=1.05, hspace=0.3)
+sub_2 = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer[1], wspace=0.0, hspace=0.5)
+
+ax = np.empty((3,2),dtype="object")
+for ii in range(3):
+    for jj in range(2):
+        ax[ii, jj]= plt.subplot(sub_1[ii, jj])
+ax_b = plt.subplot(sub_2[0])
+ax_b.set_aspect(1)
+
+# Explanation
+# w_X_hr : Annual energy consumption in percentage in high resolution, for path X
+# w_X : Annual energy consumption in percentage, for path X.
+# alpha_X_hr : PV Installed capacity percentage in high resolution, for path X
+# alpha_X :PV Installed capacity percentage, for path X.
+
+w_A_hr, w_A, xlim, ylim, ylim2 = growth_plot(ax[0, 0],
+                                              minimum,
+                                              maximum,
+                                              highlight_point=highlight_point,
+                                              growth="load",
+                                              type="lineal",
+                                              fontsize=fontsize,
+                                              plot_title=True,
+                                              get_ax_lims=True,
+                                              linecolor="C3",
+                                             highlight_marker="s",
+                                             markersize=70,)
+alpha_A_hr, alpha_A, xlimpv, ylimpv, ylim2pv = growth_plot(ax[0, 1],
+                                                  minimum_pv,
+                                                  maximum_pv,
+                                                  highlight_point=highlight_point,
+                                                  growth="pv",
+                                                  type="lineal",
+                                                  fontsize=fontsize,
+                                                  plot_title=True,
+                                                  get_ax_lims=True,
+                                                  linecolor="C3",
+                                                   highlight_marker="s",
+                                                    markersize=70,
+                                                  )
+
+w_B_hr, w_B = growth_plot(ax[1, 0],
+                          minimum,
+                          maximum,
+                          highlight_point=highlight_point,
+                          growth="load",
+                          type="root",
+                          fontsize=fontsize,
+                          plot_title=False,
+                          set_ax_lims=True,
+                          xlim=xlim, ylim=ylim, ylim2=ylim2,
+                          linecolor="C4",
+                          highlight_marker="^",
+                          markersize=70,
+                          )
+alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
+                                  minimum_pv,
+                                  maximum_pv,
                                   highlight_point=highlight_point,
+                                  growth="pv",
+                                  type="square",
+                                  fontsize=fontsize,
+                                  plot_title=False,
+                                  set_ax_lims=True,
+                                  xlim=xlimpv, ylim=ylimpv, ylim2=ylim2pv,
+                                  linecolor="C4",
+                                  highlight_marker="^",
+                                  markersize=70,
+                                  )
 
-                                  growth="pv", type="root")
+# w_B_hr, w_B = growth_plot(ax[1, 0],
+#                           minimum,
+#                           maximum,
+#                           control_points,
+#                           highlight_point=highlight_point,
+#                           growth="load",
+#                           type="spline",
+#                           fontsize=fontsize,
+#                           plot_title=False)
+# alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
+#                                   minimum_pv,
+#                                   maximum_pv,
+#                                   control_points,
+#                                   highlight_point=highlight_point,
+#                                   growth="pv",
+#                                   type="root",
+#                                   fontsize=fontsize,
+#                                   plot_title=False)
 
-ax[2].plot(load_high_res, pv_high_res, linewidth=2.0, color="C2", label="Growth path")
-ax[2].scatter(load_per, pv_per, s=30, marker="o", color="C2", label="g(m): [GWh/year]: m: integer", zorder=10)
+w_C_hr, w_C = growth_plot(ax[2, 0],
+                          minimum,
+                          maximum,
+                          corrected_curve,
+                          highlight_point=highlight_point,
+                          growth="load",
+                          type="corrected",
+                          fontsize=fontsize,
+                          plot_title=False,
+                          plot_xlabel=True,
+                          set_ax_lims=True,
+                          xlim=xlim, ylim=ylim, ylim2=ylim2,
+                          linecolor="C0",
+                          highlight_marker="D",
+                          markersize=70,
+                          )
 
-ax[2].scatter(corrected_curve[:,0], corrected_curve[:,1], s=30, marker="o", color="C0", label="Corrected curve")
-ax[2].plot(x_corrected, y_corrected, color="C0")
+alpha_C_hr, alpha_C = growth_plot(ax[2, 1],
+                                  minimum_pv,
+                                  maximum_pv,
+                                  corrected_curve,
+                                  highlight_point=highlight_point,
+                                  growth="pv",
+                                  type="corrected",
+                                  fontsize=fontsize,
+                                  plot_title=False,
+                                  plot_xlabel=True,
+                                  set_ax_lims=True,
+                                  xlim=xlimpv, ylim=ylimpv, ylim2=ylim2pv,
+                                  linecolor="C0",
+                                  highlight_marker="D",
+                                  markersize=70,
+                                  )
 
-ax[2].grid(linestyle="--", color="C1", linewidth=0.4, alpha=0.9)
-ax[2].xaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
-ax[2].yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
-ax[2].xaxis.set_major_locator(mticker.MultipleLocator(0.1))
-ax[2].yaxis.set_major_locator(mticker.MultipleLocator(0.1))
-ax[2].set_xlabel("Annual Energy consumption growth [%]")
-ax[2].set_ylabel("PV Installed capacity growth [%]")
-ax[2].set_title("Static regions")
-ax[2].legend(fontsize="x-small")
-ax[2].plot(x, danger_border, color="r", linewidth=1.0, alpha=1.0)
-ax[2].plot(x, caution_border, color="#FFA500", linewidth=1.0, alpha=1.0,)
-ax[2].fill_between(x, 0, caution_border, color="green", alpha=0.3, zorder=0,
+# Add the text
+
+
+
+##############################################################
+# STATIC REGIONS CURVES AND PLOTS
+##############################################################
+
+ax_b.plot(w_A_hr, alpha_A_hr, linewidth=2.0, color="C3", label="Growth path", zorder=9)
+ax_b.scatter(w_A, alpha_A, s=30, marker="o", color="C3", label="g(m): [GWh/year]: m: integer", zorder=10)
+ax_b.scatter(w_A[highlight_point],
+             alpha_A[highlight_point],
+             s=70, marker="s", color="C3", zorder=10, edgecolors="k",)
+
+
+ax_b.plot(w_B_hr, alpha_B_hr, linewidth=2.0, color="C4", label="Growth path")
+ax_b.scatter(w_B, alpha_B, s=30, marker="o", color="C4", label="g(m): [GWh/year]: m: integer", zorder=10)
+ax_b.scatter(w_B[highlight_point],
+             alpha_B[highlight_point],
+             s=70, marker="^", color="C4", zorder=10, edgecolors="k",)
+
+
+ax_b.plot(x_corrected, y_corrected, color="C0")
+ax_b.scatter(corrected_curve[:,0], corrected_curve[:,1], s=30, marker="o", color="C0", label="Corrected curve")
+ax_b.scatter(w_C[highlight_point],
+             alpha_C[highlight_point],
+             s=70, marker="D", color="C0", zorder=10, edgecolors="k",)
+
+
+
+
+# Draw the secure regions:
+ax_b.grid(linestyle="--", color="C1", linewidth=0.4, alpha=0.9)
+ax_b.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
+ax_b.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
+ax_b.xaxis.set_major_locator(mticker.MultipleLocator(0.1))
+ax_b.yaxis.set_major_locator(mticker.MultipleLocator(0.1))
+ax_b.tick_params(axis='both', which='major', labelsize=fontsize - 1)
+ax_b.tick_params(axis='both', which='minor', labelsize=fontsize - 1)
+
+ax_b.set_xlabel("Annual Energy consumption growth [\%]", fontsize=fontsize)
+ax_b.set_ylabel("PV Installed capacity growth [\%]", fontsize=fontsize)
+ax_b.set_title("Static regions", fontsize=fontsize)
+# ax_b.legend(fontsize="x-small")
+ax_b.plot(x, danger_border, color="r", linewidth=1.0, alpha=1.0)
+ax_b.plot(x, caution_border, color="#FFA500", linewidth=1.0, alpha=1.0,)
+ax_b.fill_between(x, 0, caution_border, color="green", alpha=0.3, zorder=0,
                 label="Safe")
-ax[2].fill_between(x, caution_border,
+ax_b.fill_between(x, caution_border,
                 danger_border, color="#FFA500", alpha=0.3, zorder=0,
                 label="Caution")
-ax[2].fill_between(x, danger_border, 1, color="red", alpha=0.5, zorder=0,
+ax_b.fill_between(x, danger_border, 1, color="red", alpha=0.5, zorder=0,
                 label="Overvoltage")
-ax[2].vlines(x=x_undervoltage[0], ymin=0, ymax=y_undervoltage[0], color="b", linewidth=1.0, alpha=1.0, zorder=1)
-ax[2].fill_between(x_undervoltage, 0, y_undervoltage, color="blue", alpha=0.5, zorder=0, label="Undervoltage")
-ax[2].scatter(load_per[highlight_point], pv_per[highlight_point],
-                   s=200, marker="+", color="C4", zorder=10)
-ax[2].set_xlim(0,1)
-ax[2].set_ylim(0,1)
-#%%
+ax_b.vlines(x=x_undervoltage[0], ymin=0, ymax=y_undervoltage[0], color="b", linewidth=1.0, alpha=1.0, zorder=1)
+ax_b.fill_between(x_undervoltage, 0, y_undervoltage, color="blue", alpha=0.5, zorder=0, label="Undervoltage")
 
-
-
+ax_b.set_xlim(0,1)
+ax_b.set_ylim(0,1)
