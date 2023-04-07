@@ -366,7 +366,7 @@ def growth_plot(ax,
                 maximum,
                 control_points=None,
                 growth="load",
-                type="spline",
+                curve_type="spline",
                 highlight_point=None,
                 plot_title=False,
                 plot_legend=False,
@@ -390,7 +390,7 @@ def growth_plot(ax,
     # g(): Function of the de-normalized energy. Output value from [Min. energy in GWh, Max. energy GWh]
 
     if growth == "load":
-        title = "Load growth network - $w(l)$"
+        title = "(a)\nLoad growth network - $w(l)$"
         x_label = "Step increment ($l$) [years]"
         y1_label = "Total gird annual energy\nconsumption [GWh/year]"
         y2_label = "Annual energy consumption\ngrowth [\%]"
@@ -400,8 +400,8 @@ def growth_plot(ax,
         label3 = "f(g(m)): Energy[%]"
 
     elif growth == "pv":
-        title = "PV growth network -  " + r"$\alpha(l)$"
-        x_label = "Step increment (l) [years]"
+        title = "(b)\nPV growth network -  " + r"$\alpha(l)$"
+        x_label = "Step increment ($l$) [years]"
         y1_label = "Total grid PV installed\ncapacity [MWp]"
         y2_label = "PV installed capacity\ngrowth [\%]"
 
@@ -416,7 +416,7 @@ def growth_plot(ax,
 
     f, f_inv = normalize_and_inverse(minimum, maximum)  # From GWh to [% Energy]
 
-    if type == "corrected":
+    if curve_type == "corrected":
         # x_corrected = np.linspace(min(m), max(m), num=100)
         # y_corrected_load = pchip_interpolate(m, corrected_curve, x_corrected)
 
@@ -426,15 +426,15 @@ def growth_plot(ax,
             idx_column = 1
         g_normalized = growth_curve_normalized(m,
                                                control_points[:, idx_column],
-                                               curve=type)  # This is the normalized curve of growth.
+                                               curve=curve_type)  # This is the normalized curve of growth.
         label3 = "f(g(m)): Corrected path [%]"
 
-    elif type == "spline" and control_points is not None:
+    elif curve_type == "spline" and control_points is not None:
         g_normalized = growth_curve_normalized(control_points[:, 0],
                                                control_points[:, 1],
-                                               curve=type)  # This is the normalized curve of growth.
+                                               curve=curve_type)  # This is the normalized curve of growth.
     else:
-        g_normalized = growth_curve_normalized(curve=type)  # This is the normalized curve of growth.
+        g_normalized = growth_curve_normalized(curve=curve_type)  # This is the normalized curve of growth.
 
     g, g_inv = growth_curve(g_normalized, minimum, maximum)  # This is the de-normalized curve of growth.
 
@@ -477,13 +477,13 @@ def growth_plot(ax,
     segments_per_w = segments(x_data=w3, z_data=w4)
     segments_ver_w = segments(x_data=w5, z_data=w6)
 
-    lc1_s = mc.LineCollection(segments_kw_s, colors="C1", linewidths=0.4, linestyles="-.")
-    lc2_s = mc.LineCollection(segments_per_s, colors="C1", linewidths=0.4, linestyles="-.")
-    lc3_s = mc.LineCollection(segments_ver_s, colors="C1", linewidths=0.4, linestyles="-.")
+    lc1_s = mc.LineCollection(segments_kw_s, colors="C1", linewidths=0.3, linestyles="-.", alpha=0.5)
+    lc2_s = mc.LineCollection(segments_per_s, colors="C1", linewidths=0.3, linestyles="-.", alpha=0.5)
+    lc3_s = mc.LineCollection(segments_ver_s, colors="C1", linewidths=0.3, linestyles="-.", alpha=0.5)
 
-    lc1_w = mc.LineCollection(segments_kw_w, colors="C2", linewidths=0.4, linestyles="-.")
-    lc2_w = mc.LineCollection(segments_per_w, colors="C2", linewidths=0.4, linestyles="-.")
-    lc3_w = mc.LineCollection(segments_ver_w, colors="C2", linewidths=0.4, linestyles="-.")
+    lc1_w = mc.LineCollection(segments_kw_w, colors="C2", linewidths=0.3, linestyles="-.", alpha=0.5)
+    lc2_w = mc.LineCollection(segments_per_w, colors="C2", linewidths=0.3, linestyles="-.", alpha=0.5)
+    lc3_w = mc.LineCollection(segments_ver_w, colors="C2", linewidths=0.3, linestyles="-.", alpha=0.5)
 
     ax.scatter(m * to_integer, y_1_kw, s=30, marker="o", color=linecolor, label=label1, zorder=10)
     ax.plot(np.linspace(0, 1, 100) * to_integer, g(np.linspace(0, 1, 100)), "-", color="C2", zorder=1)
@@ -501,7 +501,7 @@ def growth_plot(ax,
         ax2.add_collection(lc3_s)
         # ax.set_xlabel("n", color="C1")
 
-        ax2.hlines(y=m, xmin=np.zeros(11), xmax=np.ones(11)*10, colors="C1", linewidths=0.4, linestyles="-.", zorder=0)
+        ax2.hlines(y=m, xmin=np.zeros(11), xmax=np.ones(11)*10, colors="C1", linewidths=0.3, linestyles="-.", zorder=0, alpha=0.5)
 
 
     if m_segments:
@@ -564,6 +564,8 @@ def growth_plot(ax,
 
 from core.figure_utils import set_figure_art
 set_figure_art()
+import matplotlib as mpl
+# mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
 
 # Borders of the static regions brought from the script: figures_static_regions.py ~line:1426:
 borders = pd.read_csv("borders_danger_caution_90_percentile.csv", index_col=0)
@@ -649,9 +651,10 @@ heights = [2,1]
 outer = fig.add_gridspec(2, 1,
                          wspace=0.15, hspace=0.25, left=0.1, bottom=0.05, right=0.87, top=0.95,
                          width_ratios=widths, height_ratios=heights )
-
+sub_2_width=[3, 1]
+sub_2_height=[1]
 sub_1 = gridspec.GridSpecFromSubplotSpec(3, 2, subplot_spec=outer[0], wspace=1.05, hspace=0.3)
-sub_2 = gridspec.GridSpecFromSubplotSpec(1, 1, subplot_spec=outer[1], wspace=0.0, hspace=0.5)
+sub_2 = gridspec.GridSpecFromSubplotSpec(1, 2, subplot_spec=outer[1], wspace=0.0, hspace=0.5, height_ratios=sub_2_height, width_ratios=sub_2_width)
 
 ax = np.empty((3,2),dtype="object")
 for ii in range(3):
@@ -671,7 +674,7 @@ w_A_hr, w_A, xlim, ylim, ylim2 = growth_plot(ax[0, 0],
                                               maximum,
                                               highlight_point=highlight_point,
                                               growth="load",
-                                              type="lineal",
+                                              curve_type="lineal",
                                               fontsize=fontsize,
                                               plot_title=True,
                                               get_ax_lims=True,
@@ -683,7 +686,7 @@ alpha_A_hr, alpha_A, xlimpv, ylimpv, ylim2pv = growth_plot(ax[0, 1],
                                                   maximum_pv,
                                                   highlight_point=highlight_point,
                                                   growth="pv",
-                                                  type="lineal",
+                                                  curve_type="lineal",
                                                   fontsize=fontsize,
                                                   plot_title=True,
                                                   get_ax_lims=True,
@@ -697,7 +700,7 @@ w_B_hr, w_B = growth_plot(ax[1, 0],
                           maximum,
                           highlight_point=highlight_point,
                           growth="load",
-                          type="root",
+                          curve_type="root",
                           fontsize=fontsize,
                           plot_title=False,
                           set_ax_lims=True,
@@ -711,7 +714,7 @@ alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
                                   maximum_pv,
                                   highlight_point=highlight_point,
                                   growth="pv",
-                                  type="square",
+                                  curve_type="square",
                                   fontsize=fontsize,
                                   plot_title=False,
                                   set_ax_lims=True,
@@ -727,7 +730,7 @@ alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
 #                           control_points,
 #                           highlight_point=highlight_point,
 #                           growth="load",
-#                           type="spline",
+#                           curve_type="spline",
 #                           fontsize=fontsize,
 #                           plot_title=False)
 # alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
@@ -736,7 +739,7 @@ alpha_B_hr, alpha_B = growth_plot(ax[1, 1],
 #                                   control_points,
 #                                   highlight_point=highlight_point,
 #                                   growth="pv",
-#                                   type="root",
+#                                   curve_type="root",
 #                                   fontsize=fontsize,
 #                                   plot_title=False)
 
@@ -746,7 +749,7 @@ w_C_hr, w_C = growth_plot(ax[2, 0],
                           corrected_curve,
                           highlight_point=highlight_point,
                           growth="load",
-                          type="corrected",
+                          curve_type="corrected",
                           fontsize=fontsize,
                           plot_title=False,
                           plot_xlabel=True,
@@ -763,7 +766,7 @@ alpha_C_hr, alpha_C = growth_plot(ax[2, 1],
                                   corrected_curve,
                                   highlight_point=highlight_point,
                                   growth="pv",
-                                  type="corrected",
+                                  curve_type="corrected",
                                   fontsize=fontsize,
                                   plot_title=False,
                                   plot_xlabel=True,
@@ -775,38 +778,54 @@ alpha_C_hr, alpha_C = growth_plot(ax[2, 1],
                                   )
 
 # Add the text
+ax[0,0].text(3, 29,s=r"$w_{\mathrm{A}}(l)$", color="C3", fontsize="xx-large", zorder=12)
+ax[0,1].text(3, 10.7,s=r"$\alpha_{\mathrm{A}}(l)$", color="C3", fontsize="xx-large", zorder=12)
 
 
+ax[1,0].text(1, 29,s=r"$w_{\mathrm{B}}(l)$", color="C4", fontsize="xx-large", zorder=12)
+ax[1,1].text(4, 10.7,s=r"$\alpha_{\mathrm{B}}(l)$", color="C4", fontsize="xx-large", zorder=12)
+ax[1,0].set_title("(c)", fontsize=fontsize)
+ax[1,1].set_title("(d)", fontsize=fontsize)
+
+
+ax[2,0].text(1, 30,s=r"$w_{\mathrm{C}}(l)$", color="C0", fontsize="xx-large", zorder=12)
+ax[2,1].text(4, 10,s=r"$\alpha_{\mathrm{C}}(l)$", color="C0", fontsize="xx-large", zorder=12)
+ax[2,0].set_title("(e)", fontsize=fontsize)
+ax[2,1].set_title("(f)", fontsize=fontsize)
 
 ##############################################################
-# STATIC REGIONS CURVES AND PLOTS
+# PATHS ON THE STATIC REGIONS
 ##############################################################
 
-ax_b.plot(w_A_hr, alpha_A_hr, linewidth=2.0, color="C3", label="Growth path", zorder=9)
-ax_b.scatter(w_A, alpha_A, s=30, marker="o", color="C3", label="g(m): [GWh/year]: m: integer", zorder=10)
+ax_b.plot(w_A_hr, alpha_A_hr, linewidth=2.0, color="C3",
+          label=r"$\Gamma_{\mathrm{A}}(l) = [ w_{\mathrm{A}}(l), \alpha_{\mathrm{A}}(l)]^\mathrm{T}$", zorder=9)
+ax_b.scatter(w_A, alpha_A, s=30, marker="o", color="C3", zorder=10)
 ax_b.scatter(w_A[highlight_point],
              alpha_A[highlight_point],
-             s=70, marker="s", color="C3", zorder=10, edgecolors="k",)
+             s=60, marker="s", color="C3", zorder=10, edgecolors="k", label=r"$\Gamma_{\mathrm{A}}(l_" + f"{highlight_point}" + ")$")
 
 
-ax_b.plot(w_B_hr, alpha_B_hr, linewidth=2.0, color="C4", label="Growth path")
-ax_b.scatter(w_B, alpha_B, s=30, marker="o", color="C4", label="g(m): [GWh/year]: m: integer", zorder=10)
+ax_b.plot(w_B_hr, alpha_B_hr, linewidth=2.0, color="C4",
+          label=r"$\Gamma_{\mathrm{B}}(l) = [ w_{\mathrm{B}}(l), \alpha_{\mathrm{B}}(l)]^\mathrm{T}$")
+ax_b.scatter(w_B, alpha_B, s=30, marker="o", color="C4", zorder=10)
 ax_b.scatter(w_B[highlight_point],
              alpha_B[highlight_point],
-             s=70, marker="^", color="C4", zorder=10, edgecolors="k",)
+             s=60, marker="^", color="C4", zorder=10, edgecolors="k", label=r"$\Gamma_{\mathrm{B}}(l_" + f"{highlight_point}" + ")$")
 
 
-ax_b.plot(x_corrected, y_corrected, color="C0")
-ax_b.scatter(corrected_curve[:,0], corrected_curve[:,1], s=30, marker="o", color="C0", label="Corrected curve")
+ax_b.plot(x_corrected, y_corrected, color="C0",
+          label=r"$\Gamma_{\mathrm{C}}(l) = [ w_{\mathrm{C}}(l), \alpha_{\mathrm{C}}(l)]^\mathrm{T}$")
+ax_b.scatter(corrected_curve[:,0], corrected_curve[:,1], s=30, marker="o", color="C0")
 ax_b.scatter(w_C[highlight_point],
              alpha_C[highlight_point],
-             s=70, marker="D", color="C0", zorder=10, edgecolors="k",)
+             s=60, marker="D", color="C0", zorder=10, edgecolors="k", label=r"$\Gamma_{\mathrm{C}}(l_" + f"{highlight_point}" + ")$")
+ax_b.legend(loc='center left', bbox_to_anchor=(1, 0.5), title="Growth paths:")
 
-
-
-
+##############################################################
+# STATIC REGIONS
+##############################################################
 # Draw the secure regions:
-ax_b.grid(linestyle="--", color="C1", linewidth=0.4, alpha=0.9)
+ax_b.grid(linestyle="--", color="C1", linewidth=0.3, alpha=0.5)
 ax_b.xaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
 ax_b.yaxis.set_major_formatter(mticker.PercentFormatter(xmax=1.0))
 ax_b.xaxis.set_major_locator(mticker.MultipleLocator(0.1))
@@ -816,19 +835,32 @@ ax_b.tick_params(axis='both', which='minor', labelsize=fontsize - 1)
 
 ax_b.set_xlabel("Annual Energy consumption growth [\%]", fontsize=fontsize)
 ax_b.set_ylabel("PV Installed capacity growth [\%]", fontsize=fontsize)
-ax_b.set_title("Static regions", fontsize=fontsize)
+ax_b.set_title("(g)", fontsize=fontsize)
 # ax_b.legend(fontsize="x-small")
 ax_b.plot(x, danger_border, color="r", linewidth=1.0, alpha=1.0)
 ax_b.plot(x, caution_border, color="#FFA500", linewidth=1.0, alpha=1.0,)
-ax_b.fill_between(x, 0, caution_border, color="green", alpha=0.3, zorder=0,
-                label="Safe")
-ax_b.fill_between(x, caution_border,
-                danger_border, color="#FFA500", alpha=0.3, zorder=0,
+lg1 = ax_b.fill_between(x, 0, caution_border, color="green", alpha=0.3, zorder=0,
+                        label="Safe")
+lg2 = ax_b.fill_between(x, caution_border,
+                        danger_border, color="#FFA500", alpha=0.3, zorder=0,
                 label="Caution")
-ax_b.fill_between(x, danger_border, 1, color="red", alpha=0.5, zorder=0,
-                label="Overvoltage")
+lg3 = ax_b.fill_between(x, danger_border, 1, color="red", alpha=0.5, zorder=0,
+                        label="Overvoltage")
 ax_b.vlines(x=x_undervoltage[0], ymin=0, ymax=y_undervoltage[0], color="b", linewidth=1.0, alpha=1.0, zorder=1)
-ax_b.fill_between(x_undervoltage, 0, y_undervoltage, color="blue", alpha=0.5, zorder=0, label="Undervoltage")
+lg4 = ax_b.fill_between(x_undervoltage, 0,
+                        y_undervoltage, color="blue", alpha=0.5, zorder=0,
+                        label="Undervoltage")
 
 ax_b.set_xlim(0,1)
 ax_b.set_ylim(0,1)
+
+# Extra legend to define the static operating regions
+legend1 = plt.legend([lg1,lg2,lg3,lg4],
+                     [lg1.get_label(), lg2.get_label(), lg3.get_label(), lg4.get_label()],
+                     loc='center left', bbox_to_anchor=(-1.75, -1.0), title="Static operating regions:",
+                     fontsize=fontsize-0.5,
+                     title_fontsize=fontsize-0.5)
+plt.gca().add_artist(legend1)
+
+plt.savefig(".\path_growths\path_growths.pdf", dpi=700, bbox_inches='tight' )
+
